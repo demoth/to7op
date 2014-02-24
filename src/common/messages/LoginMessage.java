@@ -10,13 +10,13 @@ import com.jme3.network.serializing.Serializable;
 public class LoginMessage extends AbstractMessage{
     public String login;
     public String password;
-    public boolean loggedIn;
+    public Integer id;
 
     public LoginMessage() {
     }
-    public LoginMessage(String login, String password, boolean loggedIn) {
+    public LoginMessage(String login, String password, Integer id) {
         this.login = login;
         this.password = password;
-        this.loggedIn = loggedIn;
+        this.id = id;
     }
 }
