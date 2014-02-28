@@ -6,5 +6,9 @@ import common.ClientState;
 
 @Serializable
 public class ClientStateMessage extends AbstractMessage {
-    public ClientState state;
+    public ClientState diff;
+
+    public ClientStateMessage(ClientState diff) {
+        this.diff = diff;
+    }
 }

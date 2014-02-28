@@ -9,11 +9,14 @@ import java.util.*;
  */
 public class Player {
     public Integer id;
-    public String login;
-    public List<ClientState> states = new ArrayList<>(20);
+    public String  login;
+    public ClientState lastAck;
+    public ClientState currentState;
+    public List<ClientState> history = new ArrayList<>(20);
 
     public Player(int id, String login) {
         this.id = id;
         this.login = login;
+        this.currentState = new ClientState(id);
     }
 }
