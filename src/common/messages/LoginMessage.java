@@ -13,6 +13,7 @@ public class LoginMessage extends AbstractMessage{
     public Integer id;
 
     public LoginMessage() {
+        setReliable(true);
     }
     public LoginMessage(String login, String password, Integer id) {
         this.login = login;
