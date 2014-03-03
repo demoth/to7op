@@ -9,13 +9,13 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable
 public class ActionMessage extends AbstractMessage {
-    public long     time;
+    public long     lastAckMessageTime;
     public Vector3f view;
     public long     buttons;
 
-    public ActionMessage(Vector3f view, long buttons) {
+    public ActionMessage(Vector3f view, long buttons, long lastAckMessageTime) {
         this.view = view;
         this.buttons = buttons;
-        this.time = System.currentTimeMillis();
+        this.lastAckMessageTime = lastAckMessageTime;
     }
 }

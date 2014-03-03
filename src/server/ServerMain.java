@@ -20,6 +20,7 @@ import static common.Constants.*;
 public class ServerMain extends SimpleApplication {
     Server server;
     TreeMap<Integer, Player> players = new TreeMap<>();
+    private ServerProperties conf;
 
     public static void main(String[] args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -28,38 +29,64 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         registerMessages();
-        final ServerProperties conf = loadConfiguration();
+        conf = loadConfiguration();
         try {
             server = Network.createServer(conf.port);
-            server.addMessageListener(new MessageListener<HostedConnection>() {
-                @Override
-                public void messageReceived(HostedConnection hostedConnection, Message message) {
-                    if (message instanceof LoginMessage){
-                        LoginMessage m = (LoginMessage) message;
-                        System.out.println( m.login + " joined!");
-                        players.put(hostedConnection.getId(), new Player(hostedConnection.getId(), m.login));
-                        server.broadcast(new TextMessage(m.login + " joined!"));
-                        server.broadcast(Filters.in(hostedConnection), new TextMessage("Welcome, " + m.login + '\n'
-                                + conf.motd));
-                    }
-                }
-            }, LoginMessage.class);
-            server.addMessageListener(new MessageListener<HostedConnection>() {
-                @Override
-                public void messageReceived(HostedConnection conn, Message message) {
-                    if (message instanceof ActionMessage) {
-                        ActionMessage action = (ActionMessage) message;
-                        ClientState oldState = players.get(conn.getId()).currentState;
-                        ClientState newState = applyCommands(oldState, action);
-                        players.get(conn.getId()).currentState = newState;
-                        server.broadcast(Filters.in(conn), new ClientStateMessage(oldState.diff(newState)));
-                    }
-                }
-            }, ActionMessage.class);
+            addMessageListeners();
             server.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void registerMessages() {
+        Serializer.registerClass(LoginMessage.class);
+        Serializer.registerClass(ActionMessage.class);
+        Serializer.registerClass(ClientStateMessage.class);
+    }
+
+    private ServerProperties loadConfiguration() {
+        // todo move to file
+        Properties properties = new Properties();
+        properties.setProperty("port", "5555");
+        properties.setProperty("motd", "welcome to the gaem");
+
+        ServerProperties props = new ServerProperties();
+        props.motd = properties.getProperty("motd");
+        props.port = Integer.parseInt(properties.getProperty("port"));
+        return props;
+    }
+
+    private void addMessageListeners() {
+        server.addMessageListener(new MessageListener<HostedConnection>() {
+            @Override
+            public void messageReceived(HostedConnection hostedConnection, Message message) {
+                if (message instanceof LoginMessage){
+                    LoginMessage m = (LoginMessage) message;
+                    System.out.println( m.login + " joined!");
+                    players.put(hostedConnection.getId(), new Player(hostedConnection.getId(), m.login));
+                    server.broadcast(new TextMessage(m.login + " joined!"));
+                    server.broadcast(Filters.in(hostedConnection), new TextMessage("Welcome, " + m.login + '\n'
+                            + conf.motd));
+                }
+            }
+        }, LoginMessage.class);
+        server.addMessageListener(new MessageListener<HostedConnection>() {
+            @Override
+            public void messageReceived(HostedConnection conn, Message message) {
+                if (message instanceof ActionMessage) {
+                    ActionMessage action = (ActionMessage) message;
+                    processAction(action, conn);
+                }
+            }
+        }, ActionMessage.class);
+    }
+
+    private void processAction(ActionMessage action, HostedConnection conn) {
+        ClientState oldState = players.get(conn.getId()).currentState;
+        ClientState newState = applyCommands(oldState, action);
+        players.get(conn.getId()).currentState = newState;
+        server.broadcast(Filters.in(conn), new ClientStateMessage(oldState.diff(newState)));
     }
 
     private ClientState applyCommands(ClientState oldState, ActionMessage action) {
@@ -80,24 +107,6 @@ public class ServerMain extends SimpleApplication {
     public void destroy() {
         server.close();
         super.destroy();
-    }
-
-    private ServerProperties loadConfiguration() {
-        // todo move to file
-        Properties properties = new Properties();
-        properties.setProperty("port", "5555");
-        properties.setProperty("motd", "welcome to the gaem");
-
-        ServerProperties props = new ServerProperties();
-        props.motd = properties.getProperty("motd");
-        props.port = Integer.parseInt(properties.getProperty("port"));
-        return props;
-    }
-
-    private void registerMessages() {
-        Serializer.registerClass(LoginMessage.class);
-        Serializer.registerClass(ActionMessage.class);
-        Serializer.registerClass(ClientStateMessage.class);
     }
 
     private class ServerProperties {
