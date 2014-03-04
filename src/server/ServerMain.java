@@ -1,26 +1,45 @@
 package server;
 
+import java.io.IOException;
+import java.util.Properties;
+import java.util.TreeMap;
+
 import com.jme3.app.SimpleApplication;
-import com.jme3.network.*;
+import com.jme3.asset.plugins.ZipLocator;
+import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
+import com.jme3.network.Filters;
+import com.jme3.network.HostedConnection;
+import com.jme3.network.Message;
+import com.jme3.network.MessageListener;
+import com.jme3.network.Network;
+import com.jme3.network.Server;
 import com.jme3.network.serializing.Serializer;
+import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import common.ClientState;
+import static common.Constants.Masks;
 import common.entities.Player;
 import common.messages.ActionMessage;
 import common.messages.ClientStateMessage;
 import common.messages.LoginMessage;
 import common.messages.TextMessage;
 
-import java.io.IOException;
-import java.util.Properties;
-import java.util.TreeMap;
-
-import static common.Constants.*;
-
 public class ServerMain extends SimpleApplication {
     Server server;
     TreeMap<Integer, Player> players = new TreeMap<>();
     private ServerProperties conf;
+    private Spatial          sceneModel;
+    private RigidBodyControl landscapeControl;
+    private BulletAppState   bulletAppState;
 
     public static void main(String[] args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -33,6 +52,27 @@ public class ServerMain extends SimpleApplication {
         try {
             server = Network.createServer(conf.port);
             addMessageListeners();
+            // Setup world
+                    /* Set up Physics */
+            bulletAppState = new BulletAppState();
+            stateManager.attach(bulletAppState);
+            //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
+
+            // We load the scene from the zip file and adjust its size.
+            assetManager.registerLocator("town.zip", ZipLocator.class);
+            sceneModel = assetManager.loadModel("main.scene");
+            sceneModel.setLocalScale(2f);
+            // We set up collision detection for the scene by creating a
+            // compound collision shape and a static RigidBodyControl with mass zero.
+            CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
+            landscapeControl = new RigidBodyControl(sceneShape, 0);
+            sceneModel.addControl(landscapeControl);
+            // We attach the scene and the player to the rootnode and the physics space,
+            // to make them appear in the game world.
+            rootNode.attachChild(sceneModel);
+            bulletAppState.getPhysicsSpace().add(landscapeControl);
+            setUpLight();
+
             server.start();
         } catch (IOException e) {
             e.printStackTrace();
@@ -61,13 +101,8 @@ public class ServerMain extends SimpleApplication {
         server.addMessageListener(new MessageListener<HostedConnection>() {
             @Override
             public void messageReceived(HostedConnection hostedConnection, Message message) {
-                if (message instanceof LoginMessage){
-                    LoginMessage m = (LoginMessage) message;
-                    System.out.println( m.login + " joined!");
-                    players.put(hostedConnection.getId(), new Player(hostedConnection.getId(), m.login));
-                    server.broadcast(new TextMessage(m.login + " joined!"));
-                    server.broadcast(Filters.in(hostedConnection), new TextMessage("Welcome, " + m.login + '\n'
-                            + conf.motd));
+                if (message instanceof LoginMessage) {
+                    addPlayer(hostedConnection, (LoginMessage) message);
                 }
             }
         }, LoginMessage.class);
@@ -82,6 +117,28 @@ public class ServerMain extends SimpleApplication {
         }, ActionMessage.class);
     }
 
+    private void addPlayer(HostedConnection conn, LoginMessage msg) {
+        Player player = new Player(conn.getId(), msg.login, msg.startTime);
+        // We set up collision detection for the player by creating
+        // a capsule collision shape and a CharacterControl.
+        // The CharacterControl offers extra settings for
+        // size, stepheight, jumping, falling, and gravity.
+        // We also put the player in its starting position.
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
+        CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
+        control.setJumpSpeed(20);
+        control.setFallSpeed(30);
+        control.setGravity(30);
+        control.setPhysicsLocation(new Vector3f(0, 10, 0));
+        player.control = control;
+        bulletAppState.getPhysicsSpace().add(control);
+        players.put(conn.getId(), player);
+
+        System.out.println(msg.login + " joined!");
+        server.broadcast(new TextMessage(msg.login + " joined!"));
+        server.broadcast(Filters.in(conn), new TextMessage("Welcome, " + msg.login + '\n' + conf.motd));
+    }
+
     private void processAction(ActionMessage action, HostedConnection conn) {
         ClientState oldState = players.get(conn.getId()).currentState;
         ClientState newState = applyCommands(oldState, action);
@@ -94,13 +151,14 @@ public class ServerMain extends SimpleApplication {
         result.view = action.view;
         result.speed = oldState.speed;
         if (pressed(action.buttons, Masks.WALK_FORWARD))
-            result.position = oldState.position.add(
-                    action.view);
+            result.position = oldState.position.addLocal(action.view);
+        if (pressed(action.buttons, Masks.JUMP))
+            ;
         return result;
     }
 
     private boolean pressed(long buttons, long desired) {
-        return (buttons & desired) == 1l;
+        return (buttons & desired) > 0;
     }
 
     @Override
@@ -109,8 +167,21 @@ public class ServerMain extends SimpleApplication {
         super.destroy();
     }
 
+    private void setUpLight() {
+        // We add light so we see the scene
+        AmbientLight al = new AmbientLight();
+        al.setColor(ColorRGBA.White.mult(1.3f));
+        rootNode.addLight(al);
+
+        DirectionalLight dl = new DirectionalLight();
+        dl.setColor(ColorRGBA.White);
+        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+        rootNode.addLight(dl);
+    }
+
+
     private class ServerProperties {
-        int port;
+        int    port;
         String motd;
     }
 }

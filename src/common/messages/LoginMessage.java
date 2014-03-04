@@ -11,13 +11,16 @@ public class LoginMessage extends AbstractMessage{
     public String login;
     public String password;
     public Integer id;
+    public long startTime;
 
     public LoginMessage() {
         setReliable(true);
     }
-    public LoginMessage(String login, String password, Integer id) {
+
+    public LoginMessage(String login, String password, Integer id, long startTime) {
         this.login = login;
         this.password = password;
         this.id = id;
+        this.startTime = startTime;
     }
 }

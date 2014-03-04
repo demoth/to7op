@@ -54,31 +54,22 @@ public class ClientMain extends SimpleApplication {
             client = Network.connectToServer("127.0.0.1", 5555);
         } catch (IOException e) {
             System.out.println(e.getMessage());
-            running = false;
             System.exit(1);
         }
         addMessageListeners();
         configureInputs();
         client.start();
-        // set up message sender thread
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (running) {
-                    client.send(new ActionMessage(view, buttons, lamt));
-                    buttons = 0l;
-                    try {
-                        wait(50);
-                    } catch (InterruptedException ignored) {
-                        running = false;
-                    }
-                }
-            }
-        }).start();
-        client.send(new LoginMessage("demoth", "cadaver", 0));
+        client.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
 
     private void addMessageListeners() {
+        client.addMessageListener(new MessageListener<Client>() {
+            @Override
+            public void messageReceived(Client client, Message message) {
+                // set up message sender thread
+                new Sender().start();
+            }
+        }, LoginMessage.class);
         client.addMessageListener(new MessageListener<Client>() {
             @Override
             public void messageReceived(Client client, Message message) {
@@ -86,7 +77,7 @@ public class ClientMain extends SimpleApplication {
                     System.out.println(((TextMessage) message).text);
                 }
             }
-        }, LoginMessage.class);
+        }, TextMessage.class);
         client.addMessageListener(new MessageListener<Client>() {
             @Override
             public void messageReceived(Client client, Message message) {
@@ -184,6 +175,21 @@ public class ClientMain extends SimpleApplication {
 
     public static void main(String[] args) {
         new ClientMain().start(JmeContext.Type.Display);
+    }
+
+    private class Sender extends Thread {
+        @Override
+        public void run() {
+            while (running) {
+                client.send(new ActionMessage(view, buttons, lamt));
+                buttons = 0l;
+                try {
+                    wait(50);
+                } catch (InterruptedException ignored) {
+                    running = false;
+                }
+            }
+        }
     }
 }
 //Box b = new Box(Vector3f.ZERO, 1, 1, 1);
