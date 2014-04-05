@@ -153,6 +153,13 @@ public class ServerMain extends SimpleApplication {
     }
 
     @Override
+    public void update() {
+        super.update();
+        for (Player p : players.values())
+            p.currentState = new ClientState(p.control);
+    }
+
+    @Override
     public void destroy() {
         server.close();
         super.destroy();

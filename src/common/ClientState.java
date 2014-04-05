@@ -1,5 +1,6 @@
 package common;
 
+import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.Vector3f;
 import java.io.Serializable;
 
@@ -10,6 +11,12 @@ public class ClientState implements Serializable {
     public Vector3f position;
     public Vector3f speed;
     public boolean  acknowledged;
+
+    public ClientState(CharacterControl control) {
+        view = control.getViewDirection();
+        position = control.getPhysicsLocation();
+        speed = new Vector3f(0f, 0f, 0f);
+    }
 
     public ClientState diff(ClientState other) {
         return new ClientState(
