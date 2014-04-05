@@ -173,7 +173,7 @@ public class ClientMain extends SimpleApplication {
         super.destroy();
     }
 
-    public static void main(String[] args) {
+    public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Display);
     }
 

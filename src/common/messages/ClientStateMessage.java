@@ -8,6 +8,9 @@ import common.ClientState;
 public class ClientStateMessage extends AbstractMessage {
     public ClientState diff;
 
+    public ClientStateMessage() {
+    }
+
     public ClientStateMessage(ClientState diff) {
         this.diff = diff;
     }

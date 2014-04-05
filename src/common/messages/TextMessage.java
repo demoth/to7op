@@ -10,6 +10,9 @@ import com.jme3.network.serializing.Serializable;
 public class TextMessage extends AbstractMessage {
     public String text;
 
+    public TextMessage() {
+    }
+
     public TextMessage(String text) {
         this.setReliable(true);
         this.text = text;

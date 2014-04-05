@@ -1,8 +1,8 @@
 package common.entities;
 
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.network.HostedConnection;
 import common.ClientState;
-import javafx.scene.control.Control;
 
 import java.util.*;
 
@@ -17,6 +17,7 @@ public class Player {
     public ClientState currentState;
     public List<ClientState> history = new ArrayList<>(20);
     public CharacterControl control;
+    public HostedConnection conn;
 
     public Player(int id, String login, long startTime) {
         this.id = id;

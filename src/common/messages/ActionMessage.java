@@ -13,6 +13,9 @@ public class ActionMessage extends AbstractMessage {
     public Vector3f view;
     public long     buttons;
 
+    public ActionMessage() {
+    }
+
     public ActionMessage(Vector3f view, long buttons, long lastAckMessageTime) {
         this.view = view;
         this.buttons = buttons;

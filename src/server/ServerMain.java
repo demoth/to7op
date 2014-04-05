@@ -1,37 +1,27 @@
 package server;
 
-import java.io.IOException;
-import java.util.Properties;
-import java.util.TreeMap;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
-import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.bullet.collision.shapes.*;
+import com.jme3.bullet.control.*;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.AmbientLight;
-import com.jme3.light.DirectionalLight;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector3f;
-import com.jme3.network.Filters;
-import com.jme3.network.HostedConnection;
-import com.jme3.network.Message;
-import com.jme3.network.MessageListener;
-import com.jme3.network.Network;
-import com.jme3.network.Server;
+import com.jme3.light.*;
+import com.jme3.math.*;
+import com.jme3.network.*;
 import com.jme3.network.serializing.Serializer;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import common.ClientState;
-import static common.Constants.Masks;
 import common.entities.Player;
-import common.messages.ActionMessage;
-import common.messages.ClientStateMessage;
-import common.messages.LoginMessage;
-import common.messages.TextMessage;
+import common.messages.*;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static com.jme3.network.Filters.*;
+import static common.Constants.Masks;
 
 public class ServerMain extends SimpleApplication {
     Server server;
@@ -40,8 +30,9 @@ public class ServerMain extends SimpleApplication {
     private Spatial          sceneModel;
     private RigidBodyControl landscapeControl;
     private BulletAppState   bulletAppState;
+    private boolean running = true;
 
-    public static void main(String[] args) {
+    public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);
     }
 
@@ -53,7 +44,7 @@ public class ServerMain extends SimpleApplication {
             server = Network.createServer(conf.port);
             addMessageListeners();
             // Setup world
-                    /* Set up Physics */
+            /* Set up Physics */
             bulletAppState = new BulletAppState();
             stateManager.attach(bulletAppState);
             //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
@@ -74,6 +65,7 @@ public class ServerMain extends SimpleApplication {
             setUpLight();
 
             server.start();
+            new Sender().start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -110,8 +102,7 @@ public class ServerMain extends SimpleApplication {
             @Override
             public void messageReceived(HostedConnection conn, Message message) {
                 if (message instanceof ActionMessage) {
-                    ActionMessage action = (ActionMessage) message;
-                    processAction(action, conn);
+                    applyCommands(players.get(conn.getId()), (ActionMessage) message);
                 }
             }
         }, ActionMessage.class);
@@ -133,28 +124,28 @@ public class ServerMain extends SimpleApplication {
         player.control = control;
         bulletAppState.getPhysicsSpace().add(control);
         players.put(conn.getId(), player);
-
+        //activeEntities.add(player);
         System.out.println(msg.login + " joined!");
+        // todo broadcast reliable message about new player
         server.broadcast(new TextMessage(msg.login + " joined!"));
-        server.broadcast(Filters.in(conn), new TextMessage("Welcome, " + msg.login + '\n' + conf.motd));
+        server.broadcast(in(conn), new TextMessage("Welcome, " + msg.login + '\n' + conf.motd));
     }
 
-    private void processAction(ActionMessage action, HostedConnection conn) {
-        ClientState oldState = players.get(conn.getId()).currentState;
-        ClientState newState = applyCommands(oldState, action);
-        players.get(conn.getId()).currentState = newState;
-        server.broadcast(Filters.in(conn), new ClientStateMessage(oldState.diff(newState)));
-    }
-
-    private ClientState applyCommands(ClientState oldState, ActionMessage action) {
-        ClientState result = new ClientState(oldState.entityId);
-        result.view = action.view;
-        result.speed = oldState.speed;
+    private void applyCommands(Player player, ActionMessage action) {
+        float isWalking = 0f;
+        float isStrafing = 0f;
         if (pressed(action.buttons, Masks.WALK_FORWARD))
-            result.position = oldState.position.addLocal(action.view);
+            isWalking = 1f;
+        if (pressed(action.buttons, Masks.WALK_BACKWARD))
+            isWalking = -1f;
+        if (pressed(action.buttons, Masks.STRAFE_LEFT))
+            isStrafing = 1f;
+        if (pressed(action.buttons, Masks.STRAFE_RIGHT))
+            isStrafing = -1f;
         if (pressed(action.buttons, Masks.JUMP))
-            ;
-        return result;
+            player.control.jump();
+        Vector3f left = action.view.cross(0f, 1f, 0f, new Vector3f()).multLocal(isStrafing);
+        player.control.setWalkDirection(action.view.multLocal(isWalking).add(left));
     }
 
     private boolean pressed(long buttons, long desired) {
@@ -183,5 +174,20 @@ public class ServerMain extends SimpleApplication {
     private class ServerProperties {
         int    port;
         String motd;
+    }
+
+    private class Sender extends Thread {
+        @Override
+        public void run() {
+            while (running) {
+                for (Player p : players.values())
+                    server.broadcast(in(p.conn), new ClientStateMessage(p.currentState));
+                try {
+                    wait(50);
+                } catch (InterruptedException ignored) {
+                    running = false;
+                }
+            }
+        }
     }
 }
