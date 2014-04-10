@@ -2,16 +2,24 @@ package common.messages;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
-import common.ClientState;
+
+import java.util.Date;
 
 @Serializable
 public class ClientStateMessage extends AbstractMessage {
-    public ClientState diff;
+    public Date date;
 
     public ClientStateMessage() {
     }
 
-    public ClientStateMessage(ClientState diff) {
-        this.diff = diff;
+    public ClientStateMessage(Date date) {
+        this.date = date;
+    }
+
+    @Override
+    public String toString() {
+        return "ClientStateMessage{" +
+                "date=" + date +
+                '}';
     }
 }

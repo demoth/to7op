@@ -1,12 +1,8 @@
 package server;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.*;
 import com.jme3.bullet.control.*;
-import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
@@ -36,31 +32,30 @@ public class ServerMain extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        Util.registerMessages();
+        MessageRegistration.registerAll();
         conf = loadConfiguration();
         try {
             server = Network.createServer(conf.port);
             addMessageListeners();
             // Setup world
             /* Set up Physics */
-            bulletAppState = new BulletAppState();
-            stateManager.attach(bulletAppState);
+            //bulletAppState = new BulletAppState();
+            //stateManager.attach(bulletAppState);
             //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
 
             // We load the scene from the zip file and adjust its size.
-            assetManager.registerLocator("town.zip", ZipLocator.class);
-            sceneModel = assetManager.loadModel("main.scene");
-            sceneModel.setLocalScale(2f);
+            //assetManager.registerLocator("town.zip", ZipLocator.class);
+            //sceneModel = assetManager.loadModel("main.scene");
+            //sceneModel.setLocalScale(2f);
             // We set up collision detection for the scene by creating a
             // compound collision shape and a static RigidBodyControl with mass zero.
-            CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
-            landscapeControl = new RigidBodyControl(sceneShape, 0);
-            sceneModel.addControl(landscapeControl);
+            //CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
+            //landscapeControl = new RigidBodyControl(sceneShape, 0);
+            //sceneModel.addControl(landscapeControl);
             // We attach the scene and the player to the rootnode and the physics space,
             // to make them appear in the game world.
-            bulletAppState.getPhysicsSpace().add(landscapeControl);
-            rootNode.attachChild(sceneModel);
-//            setUpLight();
+            //bulletAppState.getPhysicsSpace().add(landscapeControl);
+            //rootNode.attachChild(sceneModel);
 
             server.start();
             new Sender().start();
@@ -86,6 +81,7 @@ public class ServerMain extends SimpleApplication {
             @Override
             public void messageReceived(HostedConnection hostedConnection, Message message) {
                 if (message instanceof LoginMessage) {
+                    System.out.println("LoginMessage received: " + message);
                     addPlayer(hostedConnection, (LoginMessage) message);
                 }
             }
@@ -94,6 +90,7 @@ public class ServerMain extends SimpleApplication {
             @Override
             public void messageReceived(HostedConnection conn, Message message) {
                 if (message instanceof ActionMessage) {
+                    System.out.println("ActionMessage received: " + message);
                     applyCommands(players.get(conn.getId()), (ActionMessage) message);
                 }
             }
@@ -108,37 +105,36 @@ public class ServerMain extends SimpleApplication {
         // The CharacterControl offers extra settings for
         // size, stepheight, jumping, falling, and gravity.
         // We also put the player in its starting position.
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
-        CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
-        control.setJumpSpeed(30);
-        control.setFallSpeed(30);
-        control.setGravity(30);
-        control.setPhysicsLocation(new Vector3f(0, 10, 0));
-        player.control = control;
-        bulletAppState.getPhysicsSpace().add(control);
+        //CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
+        //CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
+        //control.setJumpSpeed(30);
+        //control.setFallSpeed(30);
+        //control.setGravity(30);
+        //control.setPhysicsLocation(new Vector3f(0, 10, 0));
+        //player.control = control;
+        //bulletAppState.getPhysicsSpace().add(control);
         players.put(conn.getId(), player);
         //activeEntities.add(player);
-        System.out.println(msg.login + " joined!");
         // todo broadcast reliable message about new player
         server.broadcast(new TextMessage(msg.login + " joined!"));
-        server.broadcast(in(conn), new TextMessage("Welcome, " + msg.login + '\n' + conf.motd));
+        server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));
     }
 
     private void applyCommands(Player player, ActionMessage action) {
-        float isWalking = 0f;
-        float isStrafing = 0f;
-        if (pressed(action.buttons, Masks.WALK_FORWARD))
-            isWalking = 1f;
-        if (pressed(action.buttons, Masks.WALK_BACKWARD))
-            isWalking = -1f;
-        if (pressed(action.buttons, Masks.STRAFE_LEFT))
-            isStrafing = 1f;
-        if (pressed(action.buttons, Masks.STRAFE_RIGHT))
-            isStrafing = -1f;
-        if (pressed(action.buttons, Masks.JUMP))
-            player.control.jump();
-        Vector3f left = action.view.cross(0f, 1f, 0f, new Vector3f()).multLocal(isStrafing);
-        player.control.setWalkDirection(action.view.multLocal(isWalking).add(left));
+//        float isWalking = 0f;
+//        float isStrafing = 0f;
+//        if (pressed(action.buttons, Masks.WALK_FORWARD))
+//            isWalking = 1f;
+//        if (pressed(action.buttons, Masks.WALK_BACKWARD))
+//            isWalking = -1f;
+//        if (pressed(action.buttons, Masks.STRAFE_LEFT))
+//            isStrafing = 1f;
+//        if (pressed(action.buttons, Masks.STRAFE_RIGHT))
+//            isStrafing = -1f;
+//        if (pressed(action.buttons, Masks.JUMP))
+//            player.control.jump();
+//        Vector3f left = action.view.cross(0f, 1f, 0f, new Vector3f()).multLocal(isStrafing);
+//        player.control.setWalkDirection(action.view.multLocal(isWalking).add(left));
     }
 
     private boolean pressed(long buttons, long desired) {
@@ -149,7 +145,7 @@ public class ServerMain extends SimpleApplication {
     public void update() {
         super.update();
         for (Player p : players.values())
-            p.currentState = new ClientState(p.control);
+            p.currentState = new ClientStateMessage(new Date());
     }
 
     @Override
@@ -157,19 +153,6 @@ public class ServerMain extends SimpleApplication {
         server.close();
         super.destroy();
     }
-
-    private void setUpLight() {
-        // We add light so we see the scene
-        AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(al);
-
-        DirectionalLight dl = new DirectionalLight();
-        dl.setColor(ColorRGBA.White);
-        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-        rootNode.addLight(dl);
-    }
-
 
     private class ServerProperties {
         int    port;
@@ -181,9 +164,9 @@ public class ServerMain extends SimpleApplication {
         public void run() {
             while (running) {
                 for (Player p : players.values())
-                    server.broadcast(in(p.conn), new ClientStateMessage(p.currentState));
+                    server.broadcast(in(p.conn), p.currentState);
                 try {
-                    sleep(50);
+                    sleep(1000);
                 } catch (InterruptedException ignored) {
                     running = false;
                 }

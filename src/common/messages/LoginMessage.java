@@ -23,4 +23,14 @@ public class LoginMessage extends AbstractMessage{
         this.id = id;
         this.startTime = startTime;
     }
+
+    @Override
+    public String toString() {
+        return "LoginMessage{" +
+                "login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                ", id=" + id +
+                ", startTime=" + startTime +
+                '}';
+    }
 }

@@ -2,7 +2,7 @@ package common.entities;
 
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.network.HostedConnection;
-import common.ClientState;
+import common.messages.ClientStateMessage;
 
 import java.util.*;
 
@@ -13,16 +13,14 @@ public class Player {
     public long        startTime;
     public Integer     id;
     public String      login;
-    public ClientState lastAck;
-    public ClientState currentState;
-    public List<ClientState> history = new ArrayList<>(20);
+    public ClientStateMessage currentState;
     public CharacterControl control;
     public HostedConnection conn;
 
     public Player(int id, String login, long startTime) {
         this.id = id;
         this.login = login;
-        this.currentState = new ClientState(id);
+        this.currentState = new ClientStateMessage();
         this.startTime = startTime;
     }
 }

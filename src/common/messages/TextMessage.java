@@ -17,4 +17,11 @@ public class TextMessage extends AbstractMessage {
         this.setReliable(true);
         this.text = text;
     }
+
+    @Override
+    public String toString() {
+        return "TextMessage{" +
+                "text='" + text + '\'' +
+                '}';
+    }
 }

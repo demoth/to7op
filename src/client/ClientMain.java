@@ -1,7 +1,6 @@
 package client;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
@@ -13,6 +12,7 @@ import common.*;
 import common.messages.*;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static common.Constants.Actions.*;
@@ -23,24 +23,37 @@ public class ClientMain extends SimpleApplication {
     volatile long     buttons;
     volatile long     lamt; // last acknowledged message time (from server)
     volatile Vector3f view = new Vector3f(0f, 0f, 0f);
-    private Spatial          sceneModel;
-
-    ClientState currentState;
+    ClientStateMessage currentState;
     Integer     myId;
     Spatial     player;
     ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
     boolean                        running  = true;
+    private Spatial          sceneModel;
 
+    public static void main(String... args) {
+        new ClientMain().start(JmeContext.Type.Headless);
+    }
+
+    @Override
+    public void update() {
+        if (!messages.isEmpty()) {
+            Message message = messages.poll();
+            if (message instanceof ClientStateMessage) {
+                System.out.println("ClientStateMessage processed: " + message);
+            }
+        }
+        super.update();
+    }
 
     @Override
     public void simpleInitApp() {
-        Util.registerMessages();
+        MessageRegistration.registerAll();
         try {
-            assetManager.registerLocator("town.zip", ZipLocator.class);
-            sceneModel = assetManager.loadModel("main.scene");
-            sceneModel.setLocalScale(2f);
-            rootNode.attachChild(sceneModel);
-            setUpLight();
+            //assetManager.registerLocator("town.zip", ZipLocator.class);
+            //sceneModel = assetManager.loadModel("main.scene");
+            //sceneModel.setLocalScale(2f);
+            //rootNode.attachChild(sceneModel);
+            //setUpLight();
 
             client = Network.connectToServer("127.0.0.1", 5555);
         } catch (IOException e) {
@@ -57,7 +70,9 @@ public class ClientMain extends SimpleApplication {
         client.addMessageListener(new MessageListener<Client>() {
             @Override
             public void messageReceived(Client client, Message message) {
-                // set up message sender thread
+                if (message instanceof LoginMessage) {
+                    System.out.println("LoginMessage received: " + message);
+                }
                 new Sender().start();
             }
         }, LoginMessage.class);
@@ -65,7 +80,7 @@ public class ClientMain extends SimpleApplication {
             @Override
             public void messageReceived(Client client, Message message) {
                 if (message instanceof TextMessage) {
-                    System.out.println(((TextMessage) message).text);
+                    System.out.println("TextMessage received: " + message);
                 }
             }
         }, TextMessage.class);
@@ -73,6 +88,7 @@ public class ClientMain extends SimpleApplication {
             @Override
             public void messageReceived(Client client, Message message) {
                 if (message instanceof ClientStateMessage) {
+                    System.out.println("ClientStateMessage received: " + message);
                     messages.add(message);
                 }
             }
@@ -100,26 +116,6 @@ public class ClientMain extends SimpleApplication {
         }, LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT);
     }
 
-    private void registerMessages() {
-    }
-
-    private void updateLookAngle(String name, float value, float tpf) {
-        switch (name) {
-            case LOOK_UP:
-                view.y += value * tpf;
-                break;
-            case LOOK_DOWN:
-                view.y -= value * tpf;
-                break;
-            case LOOK_LEFT:
-                view.x -= value * tpf;
-                break;
-            case LOOK_RIGHT:
-                view.x += value * tpf;
-                break;
-        }
-    }
-
     private void pushButton(String actionName, boolean pressed) {
         if (pressed)
             switch (actionName) {
@@ -139,19 +135,21 @@ public class ClientMain extends SimpleApplication {
             }
     }
 
-    @Override
-    public void update() {
-        if (!messages.isEmpty()) {
-            Message message = messages.poll();
-            if (message instanceof ClientStateMessage) {
-                ClientStateMessage m = (ClientStateMessage) message;
-                ClientState diff = m.diff;
-                lamt = diff.time;
-                player.setLocalTranslation(diff.position);
-                player.setLocalRotation(new Quaternion(diff.view.x, diff.view.y, diff.view.z, 0f));
-            }
+    private void updateLookAngle(String name, float value, float tpf) {
+        switch (name) {
+            case LOOK_UP:
+                view.y += value * tpf;
+                break;
+            case LOOK_DOWN:
+                view.y -= value * tpf;
+                break;
+            case LOOK_LEFT:
+                view.x -= value * tpf;
+                break;
+            case LOOK_RIGHT:
+                view.x += value * tpf;
+                break;
         }
-        super.update();
     }
 
     @Override
@@ -172,19 +170,13 @@ public class ClientMain extends SimpleApplication {
         rootNode.addLight(dl);
     }
 
-
-    public static void main(String... args) {
-        new ClientMain().start(JmeContext.Type.Display);
-    }
-
     private class Sender extends Thread {
         @Override
         public void run() {
             while (running) {
-                client.send(new ActionMessage(view, buttons, lamt));
-                buttons = 0l;
+                client.send(new ActionMessage(new Date()));
                 try {
-                    sleep(50);
+                    sleep(1000);
                 } catch (InterruptedException ignored) {
                     running = false;
                 }
@@ -192,10 +184,3 @@ public class ClientMain extends SimpleApplication {
         }
     }
 }
-//Box b = new Box(Vector3f.ZERO, 1, 1, 1);
-//geom = new Geometry("Box", b);
-//        Material mat = new Material(assetManager,
-//        "Common/MatDefs/Misc/Unshaded.j3md");
-//        mat.setColor("Color", ColorRGBA.Blue);
-//        geom.setMaterial(mat);
-//        rootNode.attachChild(geom);
