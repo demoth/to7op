@@ -13,7 +13,7 @@ import common.messages.*;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import static common.Constants.Actions.*;
@@ -28,7 +28,6 @@ public class ClientMain extends SimpleApplication {
     Integer myId;
     Spatial player;
     ConcurrentLinkedQueue<ClientStateMessage> messages = new ConcurrentLinkedQueue<>();
-    boolean running = true;
     private Spatial sceneModel;
 
     public static void main(String... args) {
@@ -66,15 +65,28 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void addMessageListeners() {
-        connection.addMessageListener((client, message) -> {
-            log.info("LoginMessage received: " + message);
-            new Sender().start();
-        }, LoginMessage.class);
-        connection.addMessageListener((client, message) -> log.info("TextMessage received: " + message), TextMessage.class);
-        connection.addMessageListener((client, message) -> {
-            log.info("ClientStateMessage received: " + message);
-            messages.add((ClientStateMessage) message);
-        }, ClientStateMessage.class);
+        connection.addMessageListener(this::connect, LoginMessage.class);
+        connection.addMessageListener(this::printTextMessage, TextMessage.class);
+        connection.addMessageListener(this::addMessage, ClientStateMessage.class);
+    }
+
+    private void connect(Client client, Message message) {
+        log.info("LoginMessage received: " + message);
+        try {
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
+                    connection.send(new ActionMessage(new Date())), 0, 1, TimeUnit.SECONDS).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.severe(e.getMessage());
+        }
+    }
+
+    private void addMessage(Client client, Message message) {
+        log.info("Message received: " + message);
+        messages.add((ClientStateMessage) message);
+    }
+
+    private void printTextMessage(Client client, Message message) {
+        log.info("TextMessage received: " + message);
     }
 
     private void configureInputs() {
@@ -147,18 +159,4 @@ public class ClientMain extends SimpleApplication {
         rootNode.addLight(dl);
     }
 
-    private class Sender extends Thread {
-        @Override
-        public void run() {
-            while (running) {
-                connection.send(new ActionMessage(new Date()));
-                log.info("message sent");
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ignored) {
-                    running = false;
-                }
-            }
-        }
-    }
 }
