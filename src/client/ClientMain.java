@@ -152,6 +152,7 @@ public class ClientMain extends SimpleApplication {
         public void run() {
             while (running) {
                 connection.send(new ActionMessage(new Date()));
+                log.info("message sent");
                 try {
                     sleep(1000);
                 } catch (InterruptedException ignored) {

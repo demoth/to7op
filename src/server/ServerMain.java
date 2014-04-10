@@ -12,21 +12,23 @@ import common.messages.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import static com.jme3.network.Filters.in;
+import static java.util.concurrent.TimeUnit.*;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
+    ExecutorService executor;
     Server server;
-    TreeMap<Integer, Player> players = new TreeMap<>();
+    TreeMap<Integer, Player> players = new TreeMap<Integer, Player>();
     private ServerProperties conf;
-    private Spatial          sceneModel;
+    private Spatial sceneModel;
     private RigidBodyControl landscapeControl;
-    private BulletAppState   bulletAppState;
+    private BulletAppState bulletAppState;
     private boolean running = true;
-    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<Message>();
 
     public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -60,9 +62,11 @@ public class ServerMain extends SimpleApplication {
             //rootNode.attachChild(sceneModel);
 
             server.start();
-            new Sender().start();
-        } catch (IOException e) {
-            e.printStackTrace();
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
+                    players.values().forEach((player) ->
+                            server.broadcast(in(player.conn), new ClientStateMessage(new Date()))), 0, 1, SECONDS).get();
+        } catch (IOException | ExecutionException | InterruptedException e) {
+            log.severe(e.getMessage());
         }
     }
 
@@ -146,25 +150,8 @@ public class ServerMain extends SimpleApplication {
     }
 
     private class ServerProperties {
-        int    port;
+        int port;
         String motd;
     }
 
-    private class Sender extends Thread {
-        @Override
-        public void run() {
-            while (running) {
-                players.values().forEach(this::broadcast);
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ignored) {
-                    running = false;
-                }
-            }
-        }
-
-        private void broadcast(Player p) {
-            server.broadcast(in(p.conn), p.currentState);
-        }
-    }
 }
