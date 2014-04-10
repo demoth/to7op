@@ -14,21 +14,22 @@ import common.messages.*;
 import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
 
 import static common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
-
-    Client client;
-    volatile long     buttons;
-    volatile long     lamt; // last acknowledged message time (from server)
+    private static final Logger log = Logger.getLogger("Client");
+    Client connection;
+    volatile long buttons;
+    volatile long lamt; // last acknowledged message time (from server)
     volatile Vector3f view = new Vector3f(0f, 0f, 0f);
     ClientStateMessage currentState;
-    Integer     myId;
-    Spatial     player;
-    ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    boolean                        running  = true;
-    private Spatial          sceneModel;
+    Integer myId;
+    Spatial player;
+    ConcurrentLinkedQueue<ClientStateMessage> messages = new ConcurrentLinkedQueue<>();
+    boolean running = true;
+    private Spatial sceneModel;
 
     public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Headless);
@@ -36,13 +37,11 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void update() {
+        super.update();
         if (!messages.isEmpty()) {
             Message message = messages.poll();
-            if (message instanceof ClientStateMessage) {
-                System.out.println("ClientStateMessage processed: " + message);
-            }
+            log.info("ClientStateMessage processed: " + message);
         }
-        super.update();
     }
 
     @Override
@@ -55,43 +54,26 @@ public class ClientMain extends SimpleApplication {
             //rootNode.attachChild(sceneModel);
             //setUpLight();
 
-            client = Network.connectToServer("127.0.0.1", 5555);
+            connection = Network.connectToServer("127.0.0.1", 5555);
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            log.severe(e.getMessage());
             System.exit(1);
         }
         addMessageListeners();
         configureInputs();
-        client.start();
-        client.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
+        connection.start();
+        connection.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
 
     private void addMessageListeners() {
-        client.addMessageListener(new MessageListener<Client>() {
-            @Override
-            public void messageReceived(Client client, Message message) {
-                if (message instanceof LoginMessage) {
-                    System.out.println("LoginMessage received: " + message);
-                }
-                new Sender().start();
-            }
+        connection.addMessageListener((client, message) -> {
+            log.info("LoginMessage received: " + message);
+            new Sender().start();
         }, LoginMessage.class);
-        client.addMessageListener(new MessageListener<Client>() {
-            @Override
-            public void messageReceived(Client client, Message message) {
-                if (message instanceof TextMessage) {
-                    System.out.println("TextMessage received: " + message);
-                }
-            }
-        }, TextMessage.class);
-        client.addMessageListener(new MessageListener<Client>() {
-            @Override
-            public void messageReceived(Client client, Message message) {
-                if (message instanceof ClientStateMessage) {
-                    System.out.println("ClientStateMessage received: " + message);
-                    messages.add(message);
-                }
-            }
+        connection.addMessageListener((client, message) -> log.info("TextMessage received: " + message), TextMessage.class);
+        connection.addMessageListener((client, message) -> {
+            log.info("ClientStateMessage received: " + message);
+            messages.add((ClientStateMessage) message);
         }, ClientStateMessage.class);
     }
 
@@ -102,18 +84,9 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
 
-        inputManager.addListener(new ActionListener() {
-            @Override
-            public void onAction(String name, boolean pressed, float tpf) {
-                pushButton(name, pressed);
-            }
-        }, WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY);
-        inputManager.addListener(new AnalogListener() {
-            @Override
-            public void onAnalog(String name, float value, float tpf) {
-                updateLookAngle(name, value, tpf);
-            }
-        }, LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT);
+        inputManager.addListener((ActionListener) (name, pressed, tpf) -> pushButton(name, pressed)
+                , WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY);
+        inputManager.addListener((AnalogListener) this::updateLookAngle, LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT);
     }
 
     private void pushButton(String actionName, boolean pressed) {
@@ -154,7 +127,7 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
-        client.close();
+        connection.close();
         super.destroy();
     }
 
@@ -174,7 +147,7 @@ public class ClientMain extends SimpleApplication {
         @Override
         public void run() {
             while (running) {
-                client.send(new ActionMessage(new Date()));
+                connection.send(new ActionMessage(new Date()));
                 try {
                     sleep(1000);
                 } catch (InterruptedException ignored) {

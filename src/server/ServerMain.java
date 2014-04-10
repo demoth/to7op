@@ -3,7 +3,6 @@ package server;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.*;
-import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
@@ -13,9 +12,9 @@ import common.messages.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.jme3.network.Filters.in;
-import static common.Constants.Masks;
 
 public class ServerMain extends SimpleApplication {
     Server server;
@@ -25,6 +24,7 @@ public class ServerMain extends SimpleApplication {
     private RigidBodyControl landscapeControl;
     private BulletAppState   bulletAppState;
     private boolean running = true;
+    ConcurrentLinkedQueue<ActionMessage> commands = new ConcurrentLinkedQueue<>();
 
     public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -77,22 +77,16 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addMessageListeners() {
-        server.addMessageListener(new MessageListener<HostedConnection>() {
-            @Override
-            public void messageReceived(HostedConnection hostedConnection, Message message) {
-                if (message instanceof LoginMessage) {
-                    System.out.println("LoginMessage received: " + message);
-                    addPlayer(hostedConnection, (LoginMessage) message);
-                }
+        server.addMessageListener((hostedConnection, message) -> {
+            if (message instanceof LoginMessage) {
+                System.out.println("LoginMessage received: " + message);
+                addPlayer(hostedConnection, (LoginMessage) message);
             }
         }, LoginMessage.class);
-        server.addMessageListener(new MessageListener<HostedConnection>() {
-            @Override
-            public void messageReceived(HostedConnection conn, Message message) {
-                if (message instanceof ActionMessage) {
-                    System.out.println("ActionMessage received: " + message);
-                    applyCommands(players.get(conn.getId()), (ActionMessage) message);
-                }
+        server.addMessageListener((conn, message) -> {
+            if (message instanceof ActionMessage) {
+                System.out.println("ActionMessage received: " + message);
+                commands.add((ActionMessage) message);
             }
         }, ActionMessage.class);
     }
@@ -120,7 +114,7 @@ public class ServerMain extends SimpleApplication {
         server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));
     }
 
-    private void applyCommands(Player player, ActionMessage action) {
+    private void applyCommands(ActionMessage action) {
 //        float isWalking = 0f;
 //        float isStrafing = 0f;
 //        if (pressed(action.buttons, Masks.WALK_FORWARD))
@@ -144,8 +138,7 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
-        for (Player p : players.values())
-            p.currentState = new ClientStateMessage(new Date());
+        commands.forEach(this::applyCommands);
     }
 
     @Override

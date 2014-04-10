@@ -10,6 +10,7 @@ public class ClientStateMessage extends AbstractMessage {
     public Date date;
 
     public ClientStateMessage() {
+        setReliable(false);
     }
 
     public ClientStateMessage(Date date) {

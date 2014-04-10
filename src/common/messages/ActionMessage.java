@@ -6,14 +6,12 @@ import com.jme3.network.serializing.Serializable;
 
 import java.util.Date;
 
-/**
- * Created by daniil on 2/28/14.
- */
 @Serializable
 public class ActionMessage extends AbstractMessage {
     public Date date;
 
     public ActionMessage() {
+        setReliable(false);
     }
 
     public ActionMessage(Date date) {
