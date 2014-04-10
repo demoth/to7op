@@ -26,7 +26,7 @@ public class ServerMain extends SimpleApplication {
     private RigidBodyControl landscapeControl;
     private BulletAppState   bulletAppState;
     private boolean running = true;
-    ConcurrentLinkedQueue<ActionMessage> commands = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<>();
 
     public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -79,21 +79,17 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addMessageListeners() {
-        server.addMessageListener((hostedConnection, message) -> {
-            if (message instanceof LoginMessage) {
-                log.info("LoginMessage received: " + message);
-                addPlayer(hostedConnection, (LoginMessage) message);
-            }
-        }, LoginMessage.class);
-        server.addMessageListener((conn, message) -> {
-            if (message instanceof ActionMessage) {
-                log.info("ActionMessage received: " + message);
-                commands.add((ActionMessage) message);
-            }
-        }, ActionMessage.class);
+        server.addMessageListener(this::addPlayer, LoginMessage.class);
+        server.addMessageListener(this::addMessage, ActionMessage.class);
     }
 
-    private void addPlayer(HostedConnection conn, LoginMessage msg) {
+    private void addMessage(HostedConnection conn, Message message) {
+        commands.add(message);
+    }
+
+    private void addPlayer(HostedConnection conn, Message message) {
+        log.info("LoginMessage received: " + message);
+        LoginMessage msg = (LoginMessage) message;
         Player player = new Player(conn.getId(), msg.login, msg.startTime);
         player.conn = conn;
         // We set up collision detection for the player by creating
@@ -116,7 +112,7 @@ public class ServerMain extends SimpleApplication {
         server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));
     }
 
-    private void applyCommand(ActionMessage action) {
+    private void applyCommand(Message action) {
 //        float isWalking = 0f;
 //        float isStrafing = 0f;
 //        if (pressed(action.buttons, Masks.WALK_FORWARD))
@@ -158,14 +154,17 @@ public class ServerMain extends SimpleApplication {
         @Override
         public void run() {
             while (running) {
-                for (Player p : players.values())
-                    server.broadcast(in(p.conn), p.currentState);
+                players.values().forEach(this::broadcast);
                 try {
                     sleep(1000);
                 } catch (InterruptedException ignored) {
                     running = false;
                 }
             }
+        }
+
+        private void broadcast(Player p) {
+            server.broadcast(in(p.conn), p.currentState);
         }
     }
 }
