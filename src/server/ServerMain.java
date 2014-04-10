@@ -13,10 +13,12 @@ import common.messages.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
 
 import static com.jme3.network.Filters.in;
 
 public class ServerMain extends SimpleApplication {
+    private static final Logger log = Logger.getLogger("Server");
     Server server;
     TreeMap<Integer, Player> players = new TreeMap<>();
     private ServerProperties conf;
@@ -79,13 +81,13 @@ public class ServerMain extends SimpleApplication {
     private void addMessageListeners() {
         server.addMessageListener((hostedConnection, message) -> {
             if (message instanceof LoginMessage) {
-                System.out.println("LoginMessage received: " + message);
+                log.info("LoginMessage received: " + message);
                 addPlayer(hostedConnection, (LoginMessage) message);
             }
         }, LoginMessage.class);
         server.addMessageListener((conn, message) -> {
             if (message instanceof ActionMessage) {
-                System.out.println("ActionMessage received: " + message);
+                log.info("ActionMessage received: " + message);
                 commands.add((ActionMessage) message);
             }
         }, ActionMessage.class);
@@ -114,7 +116,7 @@ public class ServerMain extends SimpleApplication {
         server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));
     }
 
-    private void applyCommands(ActionMessage action) {
+    private void applyCommand(ActionMessage action) {
 //        float isWalking = 0f;
 //        float isStrafing = 0f;
 //        if (pressed(action.buttons, Masks.WALK_FORWARD))
@@ -138,7 +140,7 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
-        commands.forEach(this::applyCommands);
+        commands.forEach(this::applyCommand);
     }
 
     @Override

@@ -84,12 +84,12 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
 
-        inputManager.addListener((ActionListener) (name, pressed, tpf) -> pushButton(name, pressed)
+        inputManager.addListener((ActionListener) this::pushButton
                 , WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY);
         inputManager.addListener((AnalogListener) this::updateLookAngle, LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT);
     }
 
-    private void pushButton(String actionName, boolean pressed) {
+    private void pushButton(String actionName, boolean pressed, float tpf) {
         if (pressed)
             switch (actionName) {
                 case WALK_FORWARD:
@@ -97,12 +97,16 @@ public class ClientMain extends SimpleApplication {
                     break;
                 case WALK_BACKWARD:
                     buttons &= Constants.Masks.WALK_BACKWARD;
+                    break;
                 case STRAFE_LEFT:
                     buttons &= Constants.Masks.STRAFE_LEFT;
+                    break;
                 case STRAFE_RIGHT:
                     buttons &= Constants.Masks.STRAFE_RIGHT;
+                    break;
                 case JUMP:
                     buttons &= Constants.Masks.JUMP;
+                    break;
                 case FIRE_PRIMARY:
                     buttons &= Constants.Masks.FIRE_PRIMARY;
             }
