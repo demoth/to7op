@@ -27,7 +27,6 @@ public class ServerMain extends SimpleApplication {
     private Spatial sceneModel;
     private RigidBodyControl landscapeControl;
     private BulletAppState bulletAppState;
-    private boolean running = true;
     ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<Message>();
 
     public static void main(String... args) {
@@ -63,11 +62,26 @@ public class ServerMain extends SimpleApplication {
 
             server.start();
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
-                    players.values().forEach((player) ->
-                            server.broadcast(in(player.conn), new ClientStateMessage(new Date()))), 0, 1, SECONDS).get();
+                    players.values().forEach(this::broadcastState), 0, 1, SECONDS).get();
         } catch (IOException | ExecutionException | InterruptedException e) {
             log.severe(e.getMessage());
         }
+    }
+
+    @Override
+    public void update() {
+        super.update();
+        commands.forEach(this::applyCommand);
+    }
+
+    @Override
+    public void destroy() {
+        server.close();
+        super.destroy();
+    }
+
+    private void broadcastState(Player player) {
+        server.broadcast(in(player.conn), new ClientStateMessage(new Date()));
     }
 
     private ServerProperties loadConfiguration() {
@@ -84,10 +98,11 @@ public class ServerMain extends SimpleApplication {
 
     private void addMessageListeners() {
         server.addMessageListener(this::addPlayer, LoginMessage.class);
-        server.addMessageListener(this::addMessage, ActionMessage.class);
+        server.addMessageListener(this::addActionMessage, ActionMessage.class);
     }
 
-    private void addMessage(HostedConnection conn, Message message) {
+    private void addActionMessage(HostedConnection conn, Message message) {
+        log.info("ActionMessage received: " + message);
         commands.add(message);
     }
 
@@ -135,18 +150,6 @@ public class ServerMain extends SimpleApplication {
 
     private boolean pressed(long buttons, long desired) {
         return (buttons & desired) > 0;
-    }
-
-    @Override
-    public void update() {
-        super.update();
-        commands.forEach(this::applyCommand);
-    }
-
-    @Override
-    public void destroy() {
-        server.close();
-        super.destroy();
     }
 
     private class ServerProperties {

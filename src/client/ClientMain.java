@@ -35,15 +35,6 @@ public class ClientMain extends SimpleApplication {
     }
 
     @Override
-    public void update() {
-        super.update();
-        if (!messages.isEmpty()) {
-            Message message = messages.poll();
-            log.info("ClientStateMessage processed: " + message);
-        }
-    }
-
-    @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
         try {
@@ -52,7 +43,6 @@ public class ClientMain extends SimpleApplication {
             //sceneModel.setLocalScale(2f);
             //rootNode.attachChild(sceneModel);
             //setUpLight();
-
             connection = Network.connectToServer("127.0.0.1", 5555);
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -64,29 +54,26 @@ public class ClientMain extends SimpleApplication {
         connection.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
 
+    @Override
+    public void update() {
+        super.update();
+        messages.forEach(this::processMessage);
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+        super.destroy();
+    }
+
     private void addMessageListeners() {
         connection.addMessageListener(this::connect, LoginMessage.class);
         connection.addMessageListener(this::printTextMessage, TextMessage.class);
-        connection.addMessageListener(this::addMessage, ClientStateMessage.class);
+        connection.addMessageListener(this::addClientStateMessage, ClientStateMessage.class);
     }
 
-    private void connect(Client client, Message message) {
-        log.info("LoginMessage received: " + message);
-        try {
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
-                    connection.send(new ActionMessage(new Date())), 0, 1, TimeUnit.SECONDS).get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.severe(e.getMessage());
-        }
-    }
-
-    private void addMessage(Client client, Message message) {
-        log.info("Message received: " + message);
-        messages.add((ClientStateMessage) message);
-    }
-
-    private void printTextMessage(Client client, Message message) {
-        log.info("TextMessage received: " + message);
+    private void processMessage(ClientStateMessage message) {
+        log.info("ClientStateMessage processed: " + message);
     }
 
     private void configureInputs() {
@@ -96,9 +83,31 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
 
-        inputManager.addListener((ActionListener) this::pushButton
-                , WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY);
-        inputManager.addListener((AnalogListener) this::updateLookAngle, LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT);
+        String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
+        String mouseMappings[] = {LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT};
+
+        inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
+        inputManager.addListener((AnalogListener) this::updateLookAngle, mouseMappings);
+    }
+
+    private void connect(Client client, Message message) {
+        log.info("LoginMessage received: " + message);
+        try {
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
+                    connection.send(new ActionMessage(new Date())), 0, 1, TimeUnit.SECONDS).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.severe(e.getMessage());
+            System.exit(2);
+        }
+    }
+
+    private void addClientStateMessage(Client client, Message message) {
+        log.info("ClientStateMessage received: " + message);
+        messages.add((ClientStateMessage) message);
+    }
+
+    private void printTextMessage(Client client, Message message) {
+        log.info("TextMessage received: " + message);
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {
@@ -139,12 +148,6 @@ public class ClientMain extends SimpleApplication {
                 view.x += value * tpf;
                 break;
         }
-    }
-
-    @Override
-    public void destroy() {
-        connection.close();
-        super.destroy();
     }
 
     private void setUpLight() {
