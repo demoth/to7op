@@ -2,15 +2,19 @@ package common;
 
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.Vector3f;
-import java.io.Serializable;
+import com.jme3.network.serializing.Serializable;
 
-public class ClientState implements Serializable {
+@Serializable
+public class ClientState implements java.io.Serializable {
     public int      entityId;
     public long     time;
     public Vector3f view;
     public Vector3f position;
     public Vector3f speed;
     public boolean  acknowledged;
+
+    public ClientState() {
+    }
 
     public ClientState(CharacterControl control) {
         view = control.getViewDirection();

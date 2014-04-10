@@ -1,35 +1,19 @@
 package client;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.input.KeyInput;
-import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseAxisTrigger;
-import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector3f;
-import com.jme3.network.Client;
-import com.jme3.network.Message;
-import com.jme3.network.MessageListener;
-import com.jme3.network.Network;
-import com.jme3.network.serializing.Serializer;
-import com.jme3.scene.Geometry;
+import com.jme3.asset.plugins.ZipLocator;
+import com.jme3.input.*;
+import com.jme3.input.controls.*;
+import com.jme3.light.*;
+import com.jme3.math.*;
+import com.jme3.network.*;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.shape.Box;
 import com.jme3.system.JmeContext;
-import common.ClientState;
-import common.Constants;
-import common.messages.ActionMessage;
-import common.messages.ClientStateMessage;
-import common.messages.LoginMessage;
-import common.messages.TextMessage;
+import common.*;
+import common.messages.*;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import javax.xml.soap.Node;
 
 import static common.Constants.Actions.*;
 
@@ -38,7 +22,8 @@ public class ClientMain extends SimpleApplication {
     Client client;
     volatile long     buttons;
     volatile long     lamt; // last acknowledged message time (from server)
-    volatile Vector3f view;
+    volatile Vector3f view = new Vector3f(0f, 0f, 0f);
+    private Spatial          sceneModel;
 
     ClientState currentState;
     Integer     myId;
@@ -49,8 +34,14 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        registerMessages();
+        Util.registerMessages();
         try {
+            assetManager.registerLocator("town.zip", ZipLocator.class);
+            sceneModel = assetManager.loadModel("main.scene");
+            sceneModel.setLocalScale(2f);
+            rootNode.attachChild(sceneModel);
+            setUpLight();
+
             client = Network.connectToServer("127.0.0.1", 5555);
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -110,10 +101,6 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void registerMessages() {
-        Serializer.registerClass(LoginMessage.class);
-        Serializer.registerClass(ActionMessage.class);
-        Serializer.registerClass(TextMessage.class);
-        Serializer.registerClass(ClientStateMessage.class);
     }
 
     private void updateLookAngle(String name, float value, float tpf) {
@@ -160,8 +147,8 @@ public class ClientMain extends SimpleApplication {
                 ClientStateMessage m = (ClientStateMessage) message;
                 ClientState diff = m.diff;
                 lamt = diff.time;
-                player.move(diff.position);
-                player.rotate(diff.view.x, diff.view.y, diff.view.z);
+                player.setLocalTranslation(diff.position);
+                player.setLocalRotation(new Quaternion(diff.view.x, diff.view.y, diff.view.z, 0f));
             }
         }
         super.update();
@@ -172,6 +159,19 @@ public class ClientMain extends SimpleApplication {
         client.close();
         super.destroy();
     }
+
+    private void setUpLight() {
+        // We add light so we see the scene
+        AmbientLight al = new AmbientLight();
+        al.setColor(ColorRGBA.White.mult(1.3f));
+        rootNode.addLight(al);
+
+        DirectionalLight dl = new DirectionalLight();
+        dl.setColor(ColorRGBA.White);
+        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+        rootNode.addLight(dl);
+    }
+
 
     public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Display);
@@ -184,7 +184,7 @@ public class ClientMain extends SimpleApplication {
                 client.send(new ActionMessage(view, buttons, lamt));
                 buttons = 0l;
                 try {
-                    wait(50);
+                    sleep(50);
                 } catch (InterruptedException ignored) {
                     running = false;
                 }

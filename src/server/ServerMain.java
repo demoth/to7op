@@ -9,18 +9,16 @@ import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.network.serializing.Serializer;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.ClientState;
+import common.*;
 import common.entities.Player;
 import common.messages.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 
-import static com.jme3.network.Filters.*;
+import static com.jme3.network.Filters.in;
 import static common.Constants.Masks;
 
 public class ServerMain extends SimpleApplication {
@@ -38,7 +36,7 @@ public class ServerMain extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        registerMessages();
+        Util.registerMessages();
         conf = loadConfiguration();
         try {
             server = Network.createServer(conf.port);
@@ -60,21 +58,15 @@ public class ServerMain extends SimpleApplication {
             sceneModel.addControl(landscapeControl);
             // We attach the scene and the player to the rootnode and the physics space,
             // to make them appear in the game world.
-            rootNode.attachChild(sceneModel);
             bulletAppState.getPhysicsSpace().add(landscapeControl);
-            setUpLight();
+            rootNode.attachChild(sceneModel);
+//            setUpLight();
 
             server.start();
             new Sender().start();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void registerMessages() {
-        Serializer.registerClass(LoginMessage.class);
-        Serializer.registerClass(ActionMessage.class);
-        Serializer.registerClass(ClientStateMessage.class);
     }
 
     private ServerProperties loadConfiguration() {
@@ -110,6 +102,7 @@ public class ServerMain extends SimpleApplication {
 
     private void addPlayer(HostedConnection conn, LoginMessage msg) {
         Player player = new Player(conn.getId(), msg.login, msg.startTime);
+        player.conn = conn;
         // We set up collision detection for the player by creating
         // a capsule collision shape and a CharacterControl.
         // The CharacterControl offers extra settings for
@@ -117,7 +110,7 @@ public class ServerMain extends SimpleApplication {
         // We also put the player in its starting position.
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
         CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
-        control.setJumpSpeed(20);
+        control.setJumpSpeed(30);
         control.setFallSpeed(30);
         control.setGravity(30);
         control.setPhysicsLocation(new Vector3f(0, 10, 0));
@@ -190,7 +183,7 @@ public class ServerMain extends SimpleApplication {
                 for (Player p : players.values())
                     server.broadcast(in(p.conn), new ClientStateMessage(p.currentState));
                 try {
-                    wait(50);
+                    sleep(50);
                 } catch (InterruptedException ignored) {
                     running = false;
                 }
