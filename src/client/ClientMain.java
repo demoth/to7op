@@ -24,10 +24,10 @@ public class ClientMain extends SimpleApplication {
     volatile long buttons;
     volatile long lamt; // last acknowledged message time (from server)
     volatile Vector3f view = new Vector3f(0f, 0f, 0f);
-    ClientStateMessage currentState;
+    ResponseMessage currentState;
     Integer myId;
     Spatial player;
-    ConcurrentLinkedQueue<ClientStateMessage> messages = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
     private Spatial sceneModel;
 
     public static void main(String... args) {
@@ -69,11 +69,16 @@ public class ClientMain extends SimpleApplication {
     private void addMessageListeners() {
         connection.addMessageListener(this::connect, LoginMessage.class);
         connection.addMessageListener(this::printTextMessage, TextMessage.class);
-        connection.addMessageListener(this::addClientStateMessage, ClientStateMessage.class);
+        connection.addMessageListener(this::addResponseMessage, ResponseMessage.class);
     }
 
-    private void processMessage(ClientStateMessage message) {
-        log.info("ClientStateMessage processed: " + message);
+    private void addResponseMessage(Client client, Message message) {
+        log.info("ResponseMessage received: " + message);
+        messages.add((ResponseMessage) message);
+    }
+
+    private void processMessage(ResponseMessage message) {
+        log.info("ResponseMessage processed: " + message);
     }
 
     private void configureInputs() {
@@ -88,26 +93,6 @@ public class ClientMain extends SimpleApplication {
 
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
         inputManager.addListener((AnalogListener) this::updateLookAngle, mouseMappings);
-    }
-
-    private void connect(Client client, Message message) {
-        log.info("LoginMessage received: " + message);
-        try {
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
-                    connection.send(new ActionMessage(new Date())), 0, 1, TimeUnit.SECONDS).get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.severe(e.getMessage());
-            System.exit(2);
-        }
-    }
-
-    private void addClientStateMessage(Client client, Message message) {
-        log.info("ClientStateMessage received: " + message);
-        messages.add((ClientStateMessage) message);
-    }
-
-    private void printTextMessage(Client client, Message message) {
-        log.info("TextMessage received: " + message);
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {
@@ -148,6 +133,25 @@ public class ClientMain extends SimpleApplication {
                 view.x += value * tpf;
                 break;
         }
+    }
+
+    private void connect(Client client, Message message) {
+        log.info("LoginMessage received: " + message);
+        try {
+            Executors.newSingleThreadScheduledExecutor()
+                    .scheduleAtFixedRate(this::sendCommands, 0, 1, TimeUnit.SECONDS).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.severe(e.getMessage());
+            System.exit(2);
+        }
+    }
+
+    private void sendCommands() {
+        connection.send(new RequestMessage(new Date()));
+    }
+
+    private void printTextMessage(Client client, Message message) {
+        log.info("TextMessage received: " + message);
     }
 
     private void setUpLight() {

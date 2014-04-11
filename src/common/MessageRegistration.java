@@ -10,8 +10,8 @@ public class MessageRegistration {
     private MessageRegistration() {}
     public static void registerAll() {
         Serializer.registerClass(LoginMessage.class);
-        Serializer.registerClass(ActionMessage.class);
         Serializer.registerClass(TextMessage.class);
-        Serializer.registerClass(ClientStateMessage.class);
+        Serializer.registerClass(RequestMessage.class);
+        Serializer.registerClass(ResponseMessage.class);
     }
 }

@@ -22,7 +22,7 @@ public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
     ExecutorService executor;
     Server server;
-    TreeMap<Integer, Player> players = new TreeMap<Integer, Player>();
+    volatile Map<Integer, Player> players = new ConcurrentHashMap<>();
     private ServerProperties conf;
     private Spatial sceneModel;
     private RigidBodyControl landscapeControl;
@@ -61,9 +61,9 @@ public class ServerMain extends SimpleApplication {
             //rootNode.attachChild(sceneModel);
 
             server.start();
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
-                    players.values().forEach(this::broadcastState), 0, 1, SECONDS).get();
-        } catch (IOException | ExecutionException | InterruptedException e) {
+            Executors.newSingleThreadScheduledExecutor()
+                    .scheduleAtFixedRate(this::sendResponses, 0, 1, SECONDS).get();
+        } catch (InterruptedException | ExecutionException | IOException e) {
             log.severe(e.getMessage());
         }
     }
@@ -80,8 +80,16 @@ public class ServerMain extends SimpleApplication {
         super.destroy();
     }
 
+    private void sendResponses(){
+        // todo: for each world cell
+        players.values().forEach(this::broadcastState);
+    }
+
     private void broadcastState(Player player) {
-        server.broadcast(in(player.conn), new ClientStateMessage(new Date()));
+        // todo: each client belong to certain world cell,
+        // calculate updates for the whole cell,
+        // then send response to all clients in this cell
+        server.broadcast(in(player.conn), new ResponseMessage(new Date()));
     }
 
     private ServerProperties loadConfiguration() {
@@ -98,11 +106,11 @@ public class ServerMain extends SimpleApplication {
 
     private void addMessageListeners() {
         server.addMessageListener(this::addPlayer, LoginMessage.class);
-        server.addMessageListener(this::addActionMessage, ActionMessage.class);
+        server.addMessageListener(this::addActionMessage, RequestMessage.class);
     }
 
     private void addActionMessage(HostedConnection conn, Message message) {
-        log.info("ActionMessage received: " + message);
+        log.info("RequestMessage received: " + message);
         commands.add(message);
     }
 
