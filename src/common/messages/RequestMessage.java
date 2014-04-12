@@ -1,6 +1,5 @@
 package common.messages;
 
-import com.jme3.math.Vector3f;
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
@@ -15,10 +14,8 @@ public class RequestMessage extends AbstractMessage {
     }
 
     public RequestMessage(Date date) {
+        this();
         this.date = date;
-    }
-
-    public RequestMessage(Vector3f view, long buttons, long lastAckMessageTime) {
     }
 
     @Override

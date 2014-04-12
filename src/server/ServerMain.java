@@ -18,9 +18,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
     Server server;
-    Map<Integer, Player> players = new ConcurrentHashMap<Integer, Player>();
+    Map<Integer, Player> players = new ConcurrentHashMap<>();
     private ServerProperties conf;
-    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<Message>();
+    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<>();
 
     public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);

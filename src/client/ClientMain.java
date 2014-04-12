@@ -3,10 +3,8 @@ package client;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
-import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import common.*;
 import common.messages.*;
@@ -22,13 +20,9 @@ public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
     Client connection;
     volatile long buttons;
-    volatile long lamt; // last acknowledged message time (from server)
     volatile Vector3f view = new Vector3f(0f, 0f, 0f);
-    ResponseMessage currentState;
-    Integer myId;
-    Spatial player;
     ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
-    private Spatial sceneModel;
+    private boolean running = true;
 
     public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Headless);
@@ -39,11 +33,6 @@ public class ClientMain extends SimpleApplication {
         MessageRegistration.registerAll();
         log.info("Messages registered");
         try {
-            //assetManager.registerLocator("town.zip", ZipLocator.class);
-            //sceneModel = assetManager.loadModel("main.scene");
-            //sceneModel.setLocalScale(2f);
-            //rootNode.attachChild(sceneModel);
-            //setUpLight();
             connection = Network.connectToServer("127.0.0.1", 5555);
             log.info("Connected");
         } catch (IOException e) {
@@ -143,7 +132,16 @@ public class ClientMain extends SimpleApplication {
 
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
-        new Sender().start();
+        new Thread(() -> {
+            while (running) {
+                sendCommands();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     private void sendCommands() {
@@ -152,31 +150,5 @@ public class ClientMain extends SimpleApplication {
 
     private void printTextMessage(Client client, Message message) {
         log.info("TextMessage received: " + message);
-    }
-
-    private void setUpLight() {
-        // We add light so we see the scene
-        AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(al);
-
-        DirectionalLight dl = new DirectionalLight();
-        dl.setColor(ColorRGBA.White);
-        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-        rootNode.addLight(dl);
-    }
-
-    class Sender extends Thread {
-        @Override
-        public void run() {
-            while (true) {
-                sendCommands();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 }
