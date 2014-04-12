@@ -143,13 +143,7 @@ public class ClientMain extends SimpleApplication {
 
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
-        try {
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(this::sendCommands, 0, 1, TimeUnit.SECONDS).get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.severe(e.getMessage());
-            System.exit(2);
-        }
+        new Sender().start();
     }
 
     private void sendCommands() {
@@ -172,4 +166,17 @@ public class ClientMain extends SimpleApplication {
         rootNode.addLight(dl);
     }
 
+    class Sender extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                sendCommands();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }
