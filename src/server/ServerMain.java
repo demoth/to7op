@@ -26,11 +26,9 @@ public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
     Server server;
     Map<Integer, Player> players = new ConcurrentHashMap<>();
-    private ServerProperties conf;
-    ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Message> requests = new ConcurrentLinkedQueue<>();
     private BulletAppState bulletAppState;
-    private Spatial sceneModel;
-    private RigidBodyControl landscapeControl;
+    private boolean running = true;
 
     public static void main(String... args) {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -39,15 +37,23 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
-        conf = loadConfiguration();
+        ServerProperties conf = loadConfiguration();
         try {
             server = Network.createServer(conf.port);
             addMessageListeners();
             initWorld();
             server.start();
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(this::sendResponses, 0, 1, SECONDS).get();
-        } catch (InterruptedException | ExecutionException | IOException e) {
+            new Thread(() -> {
+                while (running) {
+                    sendResponses();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        log.severe(e.getMessage());
+                    }
+                }
+            }).start();
+        } catch (IOException e) {
             log.severe(e.getMessage());
         }
     }
@@ -61,12 +67,12 @@ public class ServerMain extends SimpleApplication {
 
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("town.zip", ZipLocator.class);
-        sceneModel = assetManager.loadModel("main.scene");
+        Spatial sceneModel = assetManager.loadModel("main.scene");
         sceneModel.setLocalScale(2f);
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
-        landscapeControl = new RigidBodyControl(sceneShape, 0);
+        RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0);
         sceneModel.addControl(landscapeControl);
         // We attach the scene and the player to the rootnode and the physics space,
         // to make them appear in the game world.
@@ -77,7 +83,8 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
-        commands.forEach(this::applyCommand);
+        requests.forEach(this::processRequest);
+        requests.clear();
     }
 
     @Override
@@ -119,7 +126,7 @@ public class ServerMain extends SimpleApplication {
         RequestMessage request = (RequestMessage) message;
         request.playerId = conn.getId();
         log.info("RequestMessage received: " + message);
-        commands.add(message);
+        requests.add(message);
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
@@ -147,7 +154,7 @@ public class ServerMain extends SimpleApplication {
         return control;
     }
 
-    private void applyCommand(Message message) {
+    private void processRequest(Message message) {
         RequestMessage request = (RequestMessage) message;
         Player player = players.get(request.playerId);
         float isWalking = 0f;
@@ -162,8 +169,10 @@ public class ServerMain extends SimpleApplication {
             isStrafing = -1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.control.jump();
-        Vector3f left = request.view.cross(0f, 1f, 0f, new Vector3f()).multLocal(isStrafing);
-        player.control.setWalkDirection(request.view.multLocal(isWalking).add(left));
+        Vector3f left = request.view.cross(0f, 0f, 1f, new Vector3f()).multLocal(isStrafing);
+        Vector3f walkDirection = request.view.multLocal(isWalking).add(left);
+        log.info("walking: " + walkDirection);
+        player.control.setWalkDirection(walkDirection);
     }
 
     private boolean pressed(long buttons, long desired) {

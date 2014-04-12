@@ -17,9 +17,9 @@ import static common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
-    Client connection;
-    volatile long buttons;
-    volatile Vector3f view = new Vector3f(0f, 0f, 0f);
+    Client net;
+    volatile long buttons = Constants.Masks.WALK_FORWARD | Constants.Masks.STRAFE_LEFT;
+    volatile Vector3f view = new Vector3f(1f, 0f, 0f);
     ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
 
@@ -32,7 +32,7 @@ public class ClientMain extends SimpleApplication {
         MessageRegistration.registerAll();
         log.info("Messages registered");
         try {
-            connection = Network.connectToServer("127.0.0.1", 5555);
+            net = Network.connectToServer("127.0.0.1", 5555);
             log.info("Connected");
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -42,9 +42,9 @@ public class ClientMain extends SimpleApplication {
         log.info("Added message listeners, configuring inputs...");
         configureInputs();
         log.info("Configured inputs, starting...");
-        connection.start();
+        net.start();
         log.info("Client started, sending login message...");
-        connection.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
+        net.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
 
     @Override
@@ -56,14 +56,14 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
-        connection.close();
+        net.close();
         super.destroy();
     }
 
     private void addMessageListeners() {
-        connection.addMessageListener(this::connect, LoginMessage.class);
-        connection.addMessageListener(this::printTextMessage, TextMessage.class);
-        connection.addMessageListener(this::addResponseMessage, ResponseMessage.class);
+        net.addMessageListener(this::connect, LoginMessage.class);
+        net.addMessageListener(this::printTextMessage, TextMessage.class);
+        net.addMessageListener(this::addResponseMessage, ResponseMessage.class);
     }
 
     private void addResponseMessage(Client client, Message message) {
@@ -131,6 +131,7 @@ public class ClientMain extends SimpleApplication {
 
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
+        initWorld();
         new Thread(() -> {
             while (running) {
                 sendRequests();
@@ -143,8 +144,12 @@ public class ClientMain extends SimpleApplication {
         }).start();
     }
 
+    private void initWorld() {
+        
+    }
+
     private void sendRequests() {
-        connection.send(new RequestMessage(buttons, view));
+        net.send(new RequestMessage(buttons, view));
     }
 
     private void printTextMessage(Client client, Message message) {
