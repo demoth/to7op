@@ -1,27 +1,26 @@
 package common.messages;
 
+import com.jme3.math.Vector3f;
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
-import java.util.Date;
-
 @Serializable
 public class ResponseMessage extends AbstractMessage {
-    public Date date;
+    public Vector3f position;
 
     public ResponseMessage() {
         setReliable(false);
     }
 
-    public ResponseMessage(Date date) {
+    public ResponseMessage(Vector3f position) {
         this();
-        this.date = date;
+        this.position = position;
     }
 
     @Override
     public String toString() {
         return "ResponseMessage{" +
-                "date=" + date +
+                "position=" + position +
                 '}';
     }
 }

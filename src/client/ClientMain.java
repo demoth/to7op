@@ -10,7 +10,6 @@ import common.*;
 import common.messages.*;
 
 import java.io.IOException;
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 
@@ -134,7 +133,7 @@ public class ClientMain extends SimpleApplication {
         log.info("LoginMessage received: " + message);
         new Thread(() -> {
             while (running) {
-                sendCommands();
+                sendRequests();
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -144,8 +143,8 @@ public class ClientMain extends SimpleApplication {
         }).start();
     }
 
-    private void sendCommands() {
-        connection.send(new RequestMessage(new Date()));
+    private void sendRequests() {
+        connection.send(new RequestMessage(buttons, view));
     }
 
     private void printTextMessage(Client client, Message message) {
