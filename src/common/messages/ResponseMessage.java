@@ -14,6 +14,7 @@ public class ResponseMessage extends AbstractMessage {
     }
 
     public ResponseMessage(Date date) {
+        this();
         this.date = date;
     }
 

@@ -1,12 +1,9 @@
 package server;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.control.*;
 import com.jme3.network.*;
-import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.*;
+import common.MessageRegistration;
 import common.entities.Player;
 import common.messages.*;
 
@@ -16,17 +13,13 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import static com.jme3.network.Filters.in;
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
-    ExecutorService executor;
     Server server;
-    volatile Map<Integer, Player> players = new ConcurrentHashMap<>();
+    Map<Integer, Player> players = new ConcurrentHashMap<Integer, Player>();
     private ServerProperties conf;
-    private Spatial sceneModel;
-    private RigidBodyControl landscapeControl;
-    private BulletAppState bulletAppState;
     ConcurrentLinkedQueue<Message> commands = new ConcurrentLinkedQueue<Message>();
 
     public static void main(String... args) {
@@ -40,26 +33,6 @@ public class ServerMain extends SimpleApplication {
         try {
             server = Network.createServer(conf.port);
             addMessageListeners();
-            // Setup world
-            /* Set up Physics */
-            //bulletAppState = new BulletAppState();
-            //stateManager.attach(bulletAppState);
-            //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
-
-            // We load the scene from the zip file and adjust its size.
-            //assetManager.registerLocator("town.zip", ZipLocator.class);
-            //sceneModel = assetManager.loadModel("main.scene");
-            //sceneModel.setLocalScale(2f);
-            // We set up collision detection for the scene by creating a
-            // compound collision shape and a static RigidBodyControl with mass zero.
-            //CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
-            //landscapeControl = new RigidBodyControl(sceneShape, 0);
-            //sceneModel.addControl(landscapeControl);
-            // We attach the scene and the player to the rootnode and the physics space,
-            // to make them appear in the game world.
-            //bulletAppState.getPhysicsSpace().add(landscapeControl);
-            //rootNode.attachChild(sceneModel);
-
             server.start();
             Executors.newSingleThreadScheduledExecutor()
                     .scheduleAtFixedRate(this::sendResponses, 0, 1, SECONDS).get();
@@ -119,21 +92,7 @@ public class ServerMain extends SimpleApplication {
         LoginMessage msg = (LoginMessage) message;
         Player player = new Player(conn.getId(), msg.login, msg.startTime);
         player.conn = conn;
-        // We set up collision detection for the player by creating
-        // a capsule collision shape and a CharacterControl.
-        // The CharacterControl offers extra settings for
-        // size, stepheight, jumping, falling, and gravity.
-        // We also put the player in its starting position.
-        //CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
-        //CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
-        //control.setJumpSpeed(30);
-        //control.setFallSpeed(30);
-        //control.setGravity(30);
-        //control.setPhysicsLocation(new Vector3f(0, 10, 0));
-        //player.control = control;
-        //bulletAppState.getPhysicsSpace().add(control);
         players.put(conn.getId(), player);
-        //activeEntities.add(player);
         // todo broadcast reliable message about new player
         server.broadcast(new TextMessage(msg.login + " joined!"));
         server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));

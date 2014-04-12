@@ -12,7 +12,7 @@ import common.*;
 import common.messages.*;
 
 import java.io.IOException;
-import java.util.Date;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 
@@ -37,6 +37,7 @@ public class ClientMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
+        log.info("Messages registered");
         try {
             //assetManager.registerLocator("town.zip", ZipLocator.class);
             //sceneModel = assetManager.loadModel("main.scene");
@@ -44,20 +45,25 @@ public class ClientMain extends SimpleApplication {
             //rootNode.attachChild(sceneModel);
             //setUpLight();
             connection = Network.connectToServer("127.0.0.1", 5555);
+            log.info("Connected");
         } catch (IOException e) {
             log.severe(e.getMessage());
             System.exit(1);
         }
         addMessageListeners();
+        log.info("Added message listeners, configuring inputs...");
         configureInputs();
+        log.info("Configured inputs, starting...");
         connection.start();
+        log.info("Client started, sending login message...");
         connection.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
 
     @Override
     public void update() {
         super.update();
-        messages.forEach(this::processMessage);
+        if (!messages.isEmpty())
+            processMessage(messages.poll());
     }
 
     @Override
