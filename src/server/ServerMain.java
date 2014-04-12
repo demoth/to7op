@@ -20,7 +20,6 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import static com.jme3.network.Filters.in;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
@@ -47,7 +46,7 @@ public class ServerMain extends SimpleApplication {
                 while (running) {
                     sendResponses();
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(50);
                     } catch (InterruptedException e) {
                         log.severe(e.getMessage());
                     }

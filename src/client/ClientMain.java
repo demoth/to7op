@@ -1,10 +1,13 @@
 package client;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
+import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.network.*;
+import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import common.*;
 import common.messages.*;
@@ -18,13 +21,13 @@ import static common.Constants.Actions.*;
 public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
     Client net;
-    volatile long buttons = Constants.Masks.WALK_FORWARD | Constants.Masks.STRAFE_LEFT;
-    volatile Vector3f view = new Vector3f(1f, 0f, 0f);
+    volatile long buttons;
+    volatile Vector3f view = new Vector3f(0f, 0f, 0f);
     ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
 
     public static void main(String... args) {
-        new ClientMain().start(JmeContext.Type.Headless);
+        new ClientMain().start(JmeContext.Type.Display);
     }
 
     @Override
@@ -73,6 +76,7 @@ public class ClientMain extends SimpleApplication {
 
     private void processMessage(ResponseMessage message) {
         log.info("ResponseMessage processed: " + message);
+        cam.setLocation(message.position);
     }
 
     private void configureInputs() {
@@ -90,29 +94,37 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {
+        switch (actionName) {
+            case WALK_FORWARD:
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.WALK_FORWARD);
+                break;
+            case WALK_BACKWARD:
+                buttons |= Constants.Masks.WALK_BACKWARD;
+                break;
+            case STRAFE_LEFT:
+                buttons |= Constants.Masks.STRAFE_LEFT;
+                break;
+            case STRAFE_RIGHT:
+                buttons |= Constants.Masks.STRAFE_RIGHT;
+                break;
+            case JUMP:
+                buttons |= Constants.Masks.JUMP;
+                break;
+            case FIRE_PRIMARY:
+                buttons |= Constants.Masks.FIRE_PRIMARY;
+        }
+    }
+
+    private long pressOrRelease(long buttons, boolean pressed, long button) {
         if (pressed)
-            switch (actionName) {
-                case WALK_FORWARD:
-                    buttons &= Constants.Masks.WALK_FORWARD;
-                    break;
-                case WALK_BACKWARD:
-                    buttons &= Constants.Masks.WALK_BACKWARD;
-                    break;
-                case STRAFE_LEFT:
-                    buttons &= Constants.Masks.STRAFE_LEFT;
-                    break;
-                case STRAFE_RIGHT:
-                    buttons &= Constants.Masks.STRAFE_RIGHT;
-                    break;
-                case JUMP:
-                    buttons &= Constants.Masks.JUMP;
-                    break;
-                case FIRE_PRIMARY:
-                    buttons &= Constants.Masks.FIRE_PRIMARY;
-            }
+            return buttons | button;
+        else
+            return buttons & ~button;
     }
 
     private void updateLookAngle(String name, float value, float tpf) {
+        view = cam.getDirection();
+/*
         switch (name) {
             case LOOK_UP:
                 view.y += value * tpf;
@@ -127,6 +139,7 @@ public class ClientMain extends SimpleApplication {
                 view.x += value * tpf;
                 break;
         }
+*/
     }
 
     private void connect(Client client, Message message) {
@@ -136,7 +149,7 @@ public class ClientMain extends SimpleApplication {
             while (running) {
                 sendRequests();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -145,7 +158,28 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void initWorld() {
-        
+        // We re-use the flyby camera for rotation, while positioning is handled by physics
+        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
+        flyCam.setMoveSpeed(100);
+        setUpLight();
+
+        // We load the scene from the zip file and adjust its size.
+        assetManager.registerLocator("town.zip", ZipLocator.class);
+        Spatial sceneModel = assetManager.loadModel("main.scene");
+        sceneModel.setLocalScale(2f);
+        rootNode.attachChild(sceneModel);
+    }
+
+    private void setUpLight() {
+        // We add light so we see the scene
+        AmbientLight al = new AmbientLight();
+        al.setColor(ColorRGBA.White.mult(1.3f));
+        rootNode.addLight(al);
+
+        DirectionalLight dl = new DirectionalLight();
+        dl.setColor(ColorRGBA.White);
+        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+        rootNode.addLight(dl);
     }
 
     private void sendRequests() {
