@@ -1,0 +1,7 @@
+hs_err_pid*
+*.iml
+*.so
+out
+.idea
+.gradle
+build
