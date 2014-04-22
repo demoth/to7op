@@ -13,7 +13,9 @@ import common.*;
 import common.messages.*;
 
 import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static common.Constants.Actions.*;
@@ -24,6 +26,8 @@ public class ClientMain extends SimpleApplication {
     volatile long buttons;
     ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
+    private int myId;
+    private Map<Integer, Spatial> players = new HashMap<>();
 
     public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Display);
@@ -78,7 +82,15 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void processMessage(ResponseMessage message) {
-        cam.setLocation(message.position);
+        message.changes.forEach(change -> {
+            if (change.playerId == myId)
+                cam.setLocation(change.pos);
+            else {
+                Spatial spatial = players.get(change.playerId);
+                if (spatial != null)
+                    spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
+            }
+        });
     }
 
     private void configureInputs() {
@@ -128,6 +140,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void connect(Client client, Message message) {
+        myId = ((LoginMessage) message).id;
         log.info("LoginMessage received: " + message);
         new Thread(() -> {
             while (running) {

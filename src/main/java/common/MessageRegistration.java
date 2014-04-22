@@ -1,6 +1,6 @@
 package common;
 
-import com.jme3.network.serializing.Serializer;
+import com.jme3.network.serializing.*;
 import common.messages.*;
 
 /**
@@ -14,5 +14,6 @@ public class MessageRegistration {
         Serializer.registerClass(TextMessage.class);
         Serializer.registerClass(RequestMessage.class);
         Serializer.registerClass(ResponseMessage.class);
+        Serializer.registerClass(PlayerStateChange.class);
     }
 }

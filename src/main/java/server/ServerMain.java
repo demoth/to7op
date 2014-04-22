@@ -17,7 +17,9 @@ import common.messages.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
 
@@ -99,10 +101,9 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void broadcastState(Player player) {
-        // todo: each client belong to certain world cell,
-        // calculate updates for the whole cell,
-        // then send response to all clients in this cell
-        server.broadcast(in(player.conn), new ResponseMessage(player.control.getPhysicsLocation()));
+        server.broadcast(new ResponseMessage(players.values().stream()
+                .map(p -> new PlayerStateChange(p.id, p.control.getPhysicsLocation()))
+                .collect(Collectors.toList())));
     }
 
     private ServerProperties loadConfiguration() {
