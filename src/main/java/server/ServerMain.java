@@ -23,6 +23,7 @@ import static com.jme3.network.Filters.in;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
+    private static final Vector3f up = new Vector3f(0f, 1f, 0f);
     Server server;
     Map<Integer, Player> players = new ConcurrentHashMap<>();
     ConcurrentLinkedQueue<Message> requests = new ConcurrentLinkedQueue<>();
@@ -46,7 +47,7 @@ public class ServerMain extends SimpleApplication {
                 while (running) {
                     sendResponses();
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(Constants.updateRate);
                     } catch (InterruptedException e) {
                         log.severe(e.getMessage());
                     }
@@ -156,6 +157,7 @@ public class ServerMain extends SimpleApplication {
     private void processRequest(Message message) {
         RequestMessage request = (RequestMessage) message;
         Player player = players.get(request.playerId);
+        Vector3f forward = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
@@ -163,15 +165,17 @@ public class ServerMain extends SimpleApplication {
         if (pressed(request.buttons, Constants.Masks.WALK_BACKWARD))
             isWalking = -1f;
         if (pressed(request.buttons, Constants.Masks.STRAFE_LEFT))
-            isStrafing = 1f;
-        if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
             isStrafing = -1f;
+        if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
+            isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.control.jump();
-        Vector3f left = request.view.cross(0f, 0f, 1f, new Vector3f()).multLocal(isStrafing);
-        Vector3f walkDirection = request.view.multLocal(isWalking).add(left);
+        log.info("forward dir: " + forward);
+        Vector3f left = forward.cross(up).multLocal(isStrafing);
+        log.info("strafe dir: " + left);
+        Vector3f walkDirection = forward.multLocal(isWalking).add(left);
         log.info("walking: " + walkDirection);
-        player.control.setWalkDirection(walkDirection);
+        player.control.setWalkDirection(walkDirection.normalize());
     }
 
     private boolean pressed(long buttons, long desired) {

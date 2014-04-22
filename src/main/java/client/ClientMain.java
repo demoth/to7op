@@ -85,23 +85,16 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void configureInputs() {
-        inputManager.clearMappings();
         inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_Y));
         inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_H));
         inputManager.addMapping(STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_G));
         inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_J));
         inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-//        inputManager.addMapping(LOOK_UP, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
-//        inputManager.addMapping(LOOK_DOWN, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
-//        inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
-//        inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
 
         String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
-        String mouseMappings[] = {LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT};
 
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
-        inputManager.addListener((AnalogListener) this::updateLookAngle, mouseMappings);
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {
@@ -133,33 +126,13 @@ public class ClientMain extends SimpleApplication {
             return buttons & ~button;
     }
 
-    private void updateLookAngle(String name, float value, float tpf) {
-        view = cam.getDirection();
-/*
-        switch (name) {
-            case LOOK_UP:
-                view.y += value * tpf;
-                break;
-            case LOOK_DOWN:
-                view.y -= value * tpf;
-                break;
-            case LOOK_LEFT:
-                view.x -= value * tpf;
-                break;
-            case LOOK_RIGHT:
-                view.x += value * tpf;
-                break;
-        }
-*/
-    }
-
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
 //        initWorld();
         new Thread(() -> {
             while (running) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(Constants.updateRate);
                 } catch (InterruptedException e) {
                     log.severe(e.getMessage());
                 }
@@ -194,8 +167,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void sendRequests() {
-        log.info("pressed: " + buttons);
-        net.send(new RequestMessage(buttons, view));
+        net.send(new RequestMessage(buttons, cam.getDirection()));
     }
 
     private void printTextMessage(Client client, Message message) {
