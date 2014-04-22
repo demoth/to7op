@@ -1,6 +1,6 @@
 package client;
 
-import com.jme3.app.SimpleApplication;
+import com.jme3.app.*;
 import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
@@ -33,6 +33,9 @@ public class ClientMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
+//        stateManager.detach(stateManager.getState(FlyCamAppState.class));
+//        stateManager.detach(stateManager.getState(DebugKeysAppState.class));
+//        stateManager.detach(stateManager.getState(StatsAppState.class));
         log.info("Messages registered");
         try {
             net = Network.connectToServer("127.0.0.1", 5555);
@@ -46,6 +49,8 @@ public class ClientMain extends SimpleApplication {
         configureInputs();
         log.info("Configured inputs, starting...");
         net.start();
+        // todo should be moved to update loop
+        initWorld();
         log.info("Client started, sending login message...");
         net.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
     }
@@ -80,11 +85,17 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void configureInputs() {
-        inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_SPACE));
-        inputManager.addMapping(LOOK_UP, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
-        inputManager.addMapping(LOOK_DOWN, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
-        inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
-        inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
+        inputManager.clearMappings();
+        inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_Y));
+        inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_H));
+        inputManager.addMapping(STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_G));
+        inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_J));
+        inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+//        inputManager.addMapping(LOOK_UP, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+//        inputManager.addMapping(LOOK_DOWN, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
+//        inputManager.addMapping(LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, true));
+//        inputManager.addMapping(LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, false));
 
         String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
         String mouseMappings[] = {LOOK_UP, LOOK_DOWN, LOOK_LEFT, LOOK_RIGHT};
@@ -99,19 +110,19 @@ public class ClientMain extends SimpleApplication {
                 buttons = pressOrRelease(buttons, pressed, Constants.Masks.WALK_FORWARD);
                 break;
             case WALK_BACKWARD:
-                buttons |= Constants.Masks.WALK_BACKWARD;
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.WALK_BACKWARD);
                 break;
             case STRAFE_LEFT:
-                buttons |= Constants.Masks.STRAFE_LEFT;
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.STRAFE_LEFT);
                 break;
             case STRAFE_RIGHT:
-                buttons |= Constants.Masks.STRAFE_RIGHT;
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.STRAFE_RIGHT);
                 break;
             case JUMP:
-                buttons |= Constants.Masks.JUMP;
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.JUMP);
                 break;
             case FIRE_PRIMARY:
-                buttons |= Constants.Masks.FIRE_PRIMARY;
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.FIRE_PRIMARY);
         }
     }
 
@@ -144,15 +155,15 @@ public class ClientMain extends SimpleApplication {
 
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
-        initWorld();
+//        initWorld();
         new Thread(() -> {
             while (running) {
-                sendRequests();
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    log.severe(e.getMessage());
                 }
+                sendRequests();
             }
         }).start();
     }
@@ -183,6 +194,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void sendRequests() {
+        log.info("pressed: " + buttons);
         net.send(new RequestMessage(buttons, view));
     }
 
