@@ -22,7 +22,6 @@ public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
     Client net;
     volatile long buttons;
-    volatile Vector3f view = new Vector3f(0f, 0f, 0f);
     ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
 
@@ -75,12 +74,10 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void addResponseMessage(Client client, Message message) {
-        log.info("ResponseMessage received: " + message);
         messages.add((ResponseMessage) message);
     }
 
     private void processMessage(ResponseMessage message) {
-        log.info("ResponseMessage processed: " + message);
         cam.setLocation(message.position);
     }
 
@@ -95,6 +92,10 @@ public class ClientMain extends SimpleApplication {
         String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
 
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
+        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
+            running = false;
+            net.send(new DisconnectMessage());
+        }, INPUT_MAPPING_EXIT);
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {
@@ -128,7 +129,6 @@ public class ClientMain extends SimpleApplication {
 
     private void connect(Client client, Message message) {
         log.info("LoginMessage received: " + message);
-//        initWorld();
         new Thread(() -> {
             while (running) {
                 try {
@@ -144,7 +144,7 @@ public class ClientMain extends SimpleApplication {
     private void initWorld() {
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        flyCam.setMoveSpeed(100);
+        flyCam.setMoveSpeed(0);
         setUpLight();
 
         // We load the scene from the zip file and adjust its size.

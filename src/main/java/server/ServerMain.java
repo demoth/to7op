@@ -120,13 +120,19 @@ public class ServerMain extends SimpleApplication {
     private void addMessageListeners() {
         server.addMessageListener(this::addPlayer, LoginMessage.class);
         server.addMessageListener(this::queueRequest, RequestMessage.class);
+        server.addMessageListener(this::disconnect, DisconnectMessage.class);
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
         RequestMessage request = (RequestMessage) message;
         request.playerId = conn.getId();
-        log.info("RequestMessage received: " + message);
         requests.add(message);
+    }
+
+    private void disconnect(HostedConnection conn, Message message) {
+        log.info("disconnecting: " + players.get(conn.getId()).login);
+        players.remove(conn.getId());
+        log.info("remaining players: " + players.size());
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
@@ -157,6 +163,8 @@ public class ServerMain extends SimpleApplication {
     private void processRequest(Message message) {
         RequestMessage request = (RequestMessage) message;
         Player player = players.get(request.playerId);
+        if (player == null)
+            return;
         Vector3f forward = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
@@ -170,11 +178,8 @@ public class ServerMain extends SimpleApplication {
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.control.jump();
-        log.info("forward dir: " + forward);
         Vector3f left = forward.cross(up).multLocal(isStrafing);
-        log.info("strafe dir: " + left);
         Vector3f walkDirection = forward.multLocal(isWalking).add(left);
-        log.info("walking: " + walkDirection);
         player.control.setWalkDirection(walkDirection.normalize());
     }
 

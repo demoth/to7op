@@ -9,6 +9,7 @@ import common.messages.*;
 public class MessageRegistration {
     private MessageRegistration() {}
     public static void registerAll() {
+        Serializer.registerClass(DisconnectMessage.class);
         Serializer.registerClass(LoginMessage.class);
         Serializer.registerClass(TextMessage.class);
         Serializer.registerClass(RequestMessage.class);
