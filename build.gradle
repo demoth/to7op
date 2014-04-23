@@ -3,3 +3,18 @@ apply plugin: 'java'
 dependencies {
     compile fileTree(dir: 'lib', include: '*.jar')
 }
+
+task ('copylibs', type: Copy) {
+    from(file('lib'))
+    into(file('build/libs/lib'))
+}
+
+task('copydata', type: Copy) << {
+    from(file('data'))
+    into(file('build/libs/data'))
+}
+
+task('copyscripts', type: Copy) << {
+    from(file('scripts'))
+    into(buildDir)
+}
