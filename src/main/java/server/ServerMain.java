@@ -74,7 +74,7 @@ public class ServerMain extends SimpleApplication {
         //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
 
         // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("town.zip", ZipLocator.class);
+        assetManager.registerLocator("data/town.zip", ZipLocator.class);
         Spatial sceneModel = assetManager.loadModel("main.scene");
         sceneModel.setLocalScale(g_scale);
         // We set up collision detection for the scene by creating a
@@ -102,11 +102,6 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendResponses(){
-        // todo: for each world cell
-        players.values().forEach(this::broadcastState);
-    }
-
-    private void broadcastState(Player player) {
         server.broadcast(new ResponseMessage(players.values().stream()
                 .map(p -> new PlayerStateChange(p.id, p.control.getPhysicsLocation()))
                 .collect(Collectors.toList())));
@@ -128,11 +123,14 @@ public class ServerMain extends SimpleApplication {
         log.info("disconnecting: " + players.get(conn.getId()).login);
         players.remove(conn.getId());
         log.info("remaining players: " + players.size());
+        conn.close("Goodbye");
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginMessage received: " + message);
         LoginMessage msg = (LoginMessage) message;
+        if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
+            conn.close("Player with login " + msg.login + " is already in game");
         Player player = new Player(conn.getId(), msg.login, msg.startTime);
         player.conn = conn;
 

@@ -16,7 +16,6 @@ import com.jme3.network.Message;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.Config;
 import common.Constants;
 import common.MessageRegistration;
 import common.messages.*;
@@ -27,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
+import static common.Config.*;
 import static common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
@@ -50,7 +50,7 @@ public class ClientMain extends SimpleApplication {
 //        stateManager.detach(stateManager.getState(StatsAppState.class));
         log.info("Messages registered");
         try {
-            net = Network.connectToServer(Config.cl_server, Config.sv_port);
+            net = Network.connectToServer(cl_server, sv_port);
             log.info("Connected");
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -64,7 +64,7 @@ public class ClientMain extends SimpleApplication {
         // todo should be moved to update loop
         initWorld();
         log.info("Client started, sending login message...");
-        net.send(new LoginMessage(Config.cl_user, Config.cl_pass, 0, System.currentTimeMillis()));
+        net.send(new LoginMessage(cl_user, cl_pass, 0, System.currentTimeMillis()));
     }
 
     @Override
@@ -76,7 +76,8 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
-        net.close();
+        if (net.isConnected())
+            net.close();
         super.destroy();
     }
 
@@ -153,12 +154,12 @@ public class ClientMain extends SimpleApplication {
         log.info("LoginMessage received: " + message);
         new Thread(() -> {
             while (running) {
+                sendRequests();
                 try {
-                    Thread.sleep(Constants.updateRate);
+                    Thread.sleep(cl_sleep);
                 } catch (InterruptedException e) {
                     log.severe(e.getMessage());
                 }
-                sendRequests();
             }
         }).start();
     }
@@ -170,16 +171,16 @@ public class ClientMain extends SimpleApplication {
         setUpLight();
 
         // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("town.zip", ZipLocator.class);
+        assetManager.registerLocator("data/town.zip", ZipLocator.class);
         Spatial sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalScale(2f);
+        sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
     }
 
     private void setUpLight() {
         // We add light so we see the scene
         AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
+        al.setColor(ColorRGBA.White.mult(r_ambient));
         rootNode.addLight(al);
 
         DirectionalLight dl = new DirectionalLight();

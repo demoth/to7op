@@ -1,2 +1,2 @@
 #!/bin/bash
-ja
+java -cp nogaem.jar ClientMain "$@"
