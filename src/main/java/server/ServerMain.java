@@ -128,6 +128,7 @@ public class ServerMain extends SimpleApplication {
 
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginMessage received: " + message);
+        log.info("ID: " + conn.getId());
         LoginMessage msg = (LoginMessage) message;
         if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
@@ -138,9 +139,8 @@ public class ServerMain extends SimpleApplication {
         bulletAppState.getPhysicsSpace().add(player.control);
 
         players.put(conn.getId(), player);
-        // todo broadcast reliable message about new player
-        server.broadcast(new TextMessage(msg.login + " joined!"));
-        server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0));
+        server.broadcast(new PlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
+        server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0, g_map));
     }
 
     private CharacterControl createPlayerPhysics() {
@@ -149,7 +149,7 @@ public class ServerMain extends SimpleApplication {
         control.setJumpSpeed(g_player_jumpheight);
         control.setFallSpeed(g_player_fallspeed);
         control.setGravity(g_player_gravity);
-        control.setPhysicsLocation(new Vector3f(0, 10, 0));
+        control.setPhysicsLocation(g_spawn_point);
         return control;
     }
 

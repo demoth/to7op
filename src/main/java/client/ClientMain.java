@@ -33,10 +33,12 @@ public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
     Client net;
     volatile long buttons;
-    ConcurrentLinkedQueue<ResponseMessage> messages = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
     private int myId;
     private Map<Integer, Spatial> players = new HashMap<>();
+    private long sentButtons = 0;
+    private Vector3f sentDirection = new Vector3f();
 
     public static void main(String... args) {
         new ClientMain().start(JmeContext.Type.Display);
@@ -56,22 +58,14 @@ public class ClientMain extends SimpleApplication {
             log.severe(e.getMessage());
             System.exit(1);
         }
-        addMessageListeners();
+        // queue all the messages
+        net.addMessageListener((source, m) -> messages.add(m));
         log.info("Added message listeners, configuring inputs...");
         configureInputs();
         log.info("Configured inputs, starting...");
         net.start();
-        // todo should be moved to update loop
-        initWorld();
         log.info("Client started, sending login message...");
-        net.send(new LoginMessage(cl_user, cl_pass, 0, System.currentTimeMillis()));
-    }
-
-    @Override
-    public void update() {
-        super.update();
-        if (!messages.isEmpty())
-            processMessage(messages.poll());
+        net.send(new LoginMessage("" + System.currentTimeMillis(), cl_pass, 0, System.currentTimeMillis(), ""));
     }
 
     @Override
@@ -81,17 +75,35 @@ public class ClientMain extends SimpleApplication {
         super.destroy();
     }
 
-    private void addMessageListeners() {
-        net.addMessageListener(this::connect, LoginMessage.class);
-        net.addMessageListener(this::printTextMessage, TextMessage.class);
-        net.addMessageListener(this::addResponseMessage, ResponseMessage.class);
+    @Override
+    public void update() {
+        super.update();
+        if (!messages.isEmpty()) {
+            Message message = messages.poll();
+            if (message instanceof ResponseMessage)
+                processResponse((ResponseMessage) message);
+            else if (message instanceof PlayerJoinedMessage)
+                addPlayer((PlayerJoinedMessage) message);
+            else if (message instanceof LoginMessage)
+                connect((LoginMessage) message);
+            else if (message instanceof TextMessage)
+                log.info(((TextMessage) message).text);
+        }
     }
 
-    private void addResponseMessage(Client client, Message message) {
-        messages.add((ResponseMessage) message);
+    // update
+    private void addPlayer(PlayerJoinedMessage message) {
+        if (message.id == myId)
+            return;
+        Spatial model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
+        model.scale(0.1f);
+        model.setLocalTranslation(message.location);
+        rootNode.attachChild(model);
+        players.put(message.id, model);
     }
 
-    private void processMessage(ResponseMessage message) {
+    // update
+    private void processResponse(ResponseMessage message) {
         message.changes.forEach(change -> {
             if (change.playerId == myId)
                 cam.setLocation(change.pos);
@@ -103,6 +115,24 @@ public class ClientMain extends SimpleApplication {
         });
     }
 
+    // update
+    private void connect(LoginMessage message) {
+        myId = message.id;
+        log.info("LoginMessage received: " + message);
+        loadMap(message.map);
+        new Thread(() -> {
+            while (running) {
+                sendRequests();
+                try {
+                    Thread.sleep(cl_sleep);
+                } catch (InterruptedException e) {
+                    log.severe(e.getMessage());
+                }
+            }
+        }).start();
+    }
+
+    // init
     private void configureInputs() {
         inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_Y));
         inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_H));
@@ -149,22 +179,7 @@ public class ClientMain extends SimpleApplication {
             return buttons & ~button;
     }
 
-    private void connect(Client client, Message message) {
-        myId = ((LoginMessage) message).id;
-        log.info("LoginMessage received: " + message);
-        new Thread(() -> {
-            while (running) {
-                sendRequests();
-                try {
-                    Thread.sleep(cl_sleep);
-                } catch (InterruptedException e) {
-                    log.severe(e.getMessage());
-                }
-            }
-        }).start();
-    }
-
-    private void initWorld() {
+    private void loadMap(String map) {
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         flyCam.setMoveSpeed(0);
@@ -172,7 +187,7 @@ public class ClientMain extends SimpleApplication {
 
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("data/town.zip", ZipLocator.class);
-        Spatial sceneModel = assetManager.loadModel("main.scene");
+        Spatial sceneModel = assetManager.loadModel(map);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
     }
@@ -190,10 +205,11 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void sendRequests() {
+        // send nothing if player stays idle
+        if (buttons == sentButtons && cam.getDirection().equals(sentDirection))
+            return;
         net.send(new RequestMessage(buttons, cam.getDirection()));
-    }
-
-    private void printTextMessage(Client client, Message message) {
-        log.info("TextMessage received: " + message);
+        sentButtons = buttons;
+        sentDirection = cam.getDirection();
     }
 }

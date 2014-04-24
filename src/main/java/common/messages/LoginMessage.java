@@ -7,6 +7,7 @@ import com.jme3.network.serializing.Serializable;
 public class LoginMessage extends AbstractMessage{
     public String login;
     public String password;
+    public String map;
     public Integer id;
     public long startTime;
 
@@ -14,11 +15,12 @@ public class LoginMessage extends AbstractMessage{
         setReliable(true);
     }
 
-    public LoginMessage(String login, String password, Integer id, long startTime) {
+    public LoginMessage(String login, String password, Integer id, long startTime, String map) {
         this.login = login;
         this.password = password;
         this.id = id;
         this.startTime = startTime;
+        this.map = map;
     }
 
     @Override
@@ -26,6 +28,7 @@ public class LoginMessage extends AbstractMessage{
         return "LoginMessage{" +
                 "login='" + login + '\'' +
                 ", password='" + password + '\'' +
+                ", map='" + map + '\'' +
                 ", id=" + id +
                 ", startTime=" + startTime +
                 '}';
