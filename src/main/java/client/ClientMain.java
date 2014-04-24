@@ -1,21 +1,30 @@
 package client;
 
-import com.jme3.app.*;
+import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
-import com.jme3.input.*;
-import com.jme3.input.controls.*;
-import com.jme3.light.*;
-import com.jme3.math.*;
-import com.jme3.network.*;
+import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
+import com.jme3.network.Client;
+import com.jme3.network.Message;
+import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.*;
+import common.Config;
+import common.Constants;
+import common.MessageRegistration;
 import common.messages.*;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 import static common.Constants.Actions.*;
@@ -41,7 +50,7 @@ public class ClientMain extends SimpleApplication {
 //        stateManager.detach(stateManager.getState(StatsAppState.class));
         log.info("Messages registered");
         try {
-            net = Network.connectToServer("127.0.0.1", 5555);
+            net = Network.connectToServer(Config.cl_server, Config.sv_port);
             log.info("Connected");
         } catch (IOException e) {
             log.severe(e.getMessage());
@@ -55,7 +64,7 @@ public class ClientMain extends SimpleApplication {
         // todo should be moved to update loop
         initWorld();
         log.info("Client started, sending login message...");
-        net.send(new LoginMessage("demoth", "cadaver", 0, System.currentTimeMillis()));
+        net.send(new LoginMessage(Config.cl_user, Config.cl_pass, 0, System.currentTimeMillis()));
     }
 
     @Override

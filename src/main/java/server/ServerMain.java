@@ -3,25 +3,32 @@ package server;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.*;
-import com.jme3.bullet.control.*;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.Vector3f;
-import com.jme3.network.*;
+import com.jme3.network.HostedConnection;
+import com.jme3.network.Message;
+import com.jme3.network.Network;
+import com.jme3.network.Server;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.*;
+import common.Constants;
+import common.MessageRegistration;
 import common.entities.Player;
 import common.messages.*;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.Function;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
+import static common.Config.*;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");
@@ -39,9 +46,8 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
-        ServerProperties conf = loadConfiguration();
         try {
-            server = Network.createServer(conf.port);
+            server = Network.createServer(sv_port);
             addMessageListeners();
             initWorld();
             server.start();
@@ -49,7 +55,7 @@ public class ServerMain extends SimpleApplication {
                 while (running) {
                     sendResponses();
                     try {
-                        Thread.sleep(Constants.updateRate);
+                        Thread.sleep(sv_sleep);
                     } catch (InterruptedException e) {
                         log.severe(e.getMessage());
                     }
@@ -70,11 +76,11 @@ public class ServerMain extends SimpleApplication {
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("town.zip", ZipLocator.class);
         Spatial sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalScale(2f);
+        sceneModel.setLocalScale(g_scale);
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
-        RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0);
+        RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, g_mass);
         sceneModel.addControl(landscapeControl);
         // We attach the scene and the player to the rootnode and the physics space,
         // to make them appear in the game world.
@@ -104,18 +110,6 @@ public class ServerMain extends SimpleApplication {
         server.broadcast(new ResponseMessage(players.values().stream()
                 .map(p -> new PlayerStateChange(p.id, p.control.getPhysicsLocation()))
                 .collect(Collectors.toList())));
-    }
-
-    private ServerProperties loadConfiguration() {
-        // todo move to file
-        Properties properties = new Properties();
-        properties.setProperty("port", "5555");
-        properties.setProperty("motd", "welcome to the gaem");
-
-        ServerProperties props = new ServerProperties();
-        props.motd = properties.getProperty("motd");
-        props.port = Integer.parseInt(properties.getProperty("port"));
-        return props;
     }
 
     private void addMessageListeners() {
@@ -152,11 +146,11 @@ public class ServerMain extends SimpleApplication {
     }
 
     private CharacterControl createPlayerPhysics() {
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
-        CharacterControl control = new CharacterControl(capsuleShape, 0.05f);
-        control.setJumpSpeed(30);
-        control.setFallSpeed(30);
-        control.setGravity(30);
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(g_player_radius, g_player_height, g_player_axis);
+        CharacterControl control = new CharacterControl(capsuleShape, g_player_step);
+        control.setJumpSpeed(g_player_jumpheight);
+        control.setFallSpeed(g_player_fallspeed);
+        control.setGravity(g_player_gravity);
         control.setPhysicsLocation(new Vector3f(0, 10, 0));
         return control;
     }
@@ -186,11 +180,6 @@ public class ServerMain extends SimpleApplication {
 
     private boolean pressed(long buttons, long desired) {
         return (buttons & desired) > 0;
-    }
-
-    private class ServerProperties {
-        int port;
-        String motd;
     }
 
 }
