@@ -1,20 +1,31 @@
 apply plugin: 'java'
 
+libsDirName = 'release'
+
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     compile fileTree(dir: 'lib', include: '*.jar')
+    compile 'commons-cli:commons-cli:1.2'
 }
 
-task ('copylibs', type: Copy) {
+task('copylibs', type: Copy) {
     from(file('lib'))
-    into(file('build/libs/lib'))
+    into(file('build/release/lib'))
 }
 
-task('copydata', type: Copy) << {
+task('copydata', type: Copy) {
     from(file('data'))
-    into(file('build/libs/data'))
+    into(file('build/release/data'))
 }
 
-task('copyscripts', type: Copy) << {
+task('copyscripts', type: Copy) {
     from(file('scripts'))
-    into(buildDir)
+    into(file('build/release'))
+}
+
+task('release', dependsOn: ['jar','copylibs','copydata','copyscripts']) {
+
 }
