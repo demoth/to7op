@@ -10,6 +10,7 @@ import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.Client;
 import com.jme3.network.Message;
@@ -109,8 +110,10 @@ public class ClientMain extends SimpleApplication {
                 cam.setLocation(change.pos);
             else {
                 Spatial spatial = players.get(change.playerId);
-                if (spatial != null)
+                if (spatial != null) {
                     spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
+                    spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
+                }
             }
         });
     }
@@ -146,7 +149,8 @@ public class ClientMain extends SimpleApplication {
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
             running = false;
-            net.send(new DisconnectMessage());
+            if (net.isConnected())
+                net.send(new DisconnectMessage());
         }, INPUT_MAPPING_EXIT);
     }
 

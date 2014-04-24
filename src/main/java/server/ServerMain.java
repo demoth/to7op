@@ -103,7 +103,7 @@ public class ServerMain extends SimpleApplication {
 
     private void sendResponses(){
         server.broadcast(new ResponseMessage(players.values().stream()
-                .map(p -> new PlayerStateChange(p.id, p.control.getPhysicsLocation()))
+                .map(p -> new PlayerStateChange(p.id, p.view, p.control.getPhysicsLocation()))
                 .collect(Collectors.toList())));
     }
 
@@ -119,6 +119,7 @@ public class ServerMain extends SimpleApplication {
         requests.add(message);
     }
 
+    // todo: move to update loop. remove disconnecting player from physics model
     private void disconnect(HostedConnection conn, Message message) {
         log.info("disconnecting: " + players.get(conn.getId()).login);
         players.remove(conn.getId());
@@ -158,7 +159,7 @@ public class ServerMain extends SimpleApplication {
         Player player = players.get(request.playerId);
         if (player == null)
             return;
-        Vector3f forward = new Vector3f(request.view.x, 0f, request.view.z);
+        player.view = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
@@ -171,8 +172,8 @@ public class ServerMain extends SimpleApplication {
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.control.jump();
-        Vector3f left = forward.cross(up).multLocal(isStrafing);
-        Vector3f walkDirection = forward.multLocal(isWalking).add(left);
+        Vector3f left = player.view.cross(up).multLocal(isStrafing);
+        Vector3f walkDirection = player.view.multLocal(isWalking).add(left);
         player.control.setWalkDirection(walkDirection.normalize());
     }
 

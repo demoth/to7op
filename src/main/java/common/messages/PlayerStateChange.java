@@ -9,15 +9,16 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable
 public class PlayerStateChange {
-    public int playerId;
-    public Vector3f pos;
-    // todo add direction
+    public  int      playerId;
+    public  Vector3f pos;
+    public Vector3f view;
 
     public PlayerStateChange() {
     }
 
-    public PlayerStateChange(int playerId, Vector3f position) {
+    public PlayerStateChange(int playerId, Vector3f view, Vector3f position) {
         this.playerId = playerId;
         this.pos = position;
+        this.view = view;
     }
 }
