@@ -1,3 +1,5 @@
+package tests;
+
 import client.ClientMain;
 import server.ServerMain;
 

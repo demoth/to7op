@@ -2,14 +2,18 @@ package common;
 
 import com.jme3.math.Vector3f;
 
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Created by demoth on 24.04.14.
  */
 public class Config {
+    private static final Logger log = Logger.getLogger("Config");
+
     public static int  sv_port  = 5555;
     public static long sv_sleep = 50;
 
@@ -36,12 +40,53 @@ public class Config {
         void set(String src);
     }
 
+    public static interface Getter {
+        String get();
+    }
+
     public static Map<String, Setter> setters;
+    public static Map<String, Getter> getters;
+
+    public static void load(String fileName) {
+        try {
+            new BufferedReader(new FileReader(fileName)).lines().forEach(line -> {
+                String parts[] = line.split(" ");
+                if (setters.containsKey(parts[0]))
+                    setters.get(parts[0]).set(parts[1]);
+            });
+        } catch (FileNotFoundException e) {
+            log.severe(e.getMessage());
+        }
+    }
+
+    public static void save(String fileName) {
+        StringBuilder sb = new StringBuilder();
+        getters.keySet().stream().sorted().forEach(k -> sb.append(k).append(" ").append(getters.get(k).get()).append('\n'));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            writer.write(sb.toString());
+            writer.flush();
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+    }
 
     static {
         setters = new HashMap<>();
+        getters = new HashMap<>();
         Arrays.stream(Config.class.getDeclaredFields()).forEach(field -> {
-            if (field.getName().contains("_"))
+            if (field.getName().contains("_")) {
+                getters.put(field.getName(), () -> {
+                    try {
+                        if (field.getType() == Vector3f.class) {
+                            Vector3f v = (Vector3f) field.get(null);
+                            return "" + v.x + ' ' + v.y + ' ' + v.z;
+                        }
+                        return String.valueOf(field.get(null));
+                    } catch (IllegalAccessException e) {
+                        log.severe("Error while getting " + field.getName() + " value:" + e.getMessage());
+                        return "";
+                    }
+                });
                 setters.put(field.getName(), src -> {
                     try {
                         if (field.getType() == boolean.class) {
@@ -64,9 +109,10 @@ public class Config {
                             field.set(null, src);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.severe("Error while setting " + field.getName() + " value:" + e.getMessage());
                     }
                 });
+            }
         });
     }
 }

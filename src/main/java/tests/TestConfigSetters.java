@@ -1,3 +1,5 @@
+package tests;
+
 import com.jme3.math.Vector3f;
 import common.Config;
 
@@ -6,9 +8,9 @@ import java.util.logging.Logger;
 /**
  * Created by demoth on 25.04.14.
  */
-public class TestConfig {
+public class TestConfigSetters {
     public static void main(String[] args) {
-        Logger log = Logger.getLogger("TestConfig");
+        Logger log = Logger.getLogger("TestConfigSetters");
         log.info("---INTEGER TEST---");
         log.info("sv_port:" + Config.sv_port);
         Config.setters.get("sv_port").set("3214");
