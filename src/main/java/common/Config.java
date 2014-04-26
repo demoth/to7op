@@ -61,7 +61,8 @@ public class Config {
 
     public static void save(String fileName) {
         StringBuilder sb = new StringBuilder();
-        getters.keySet().stream().sorted().forEach(k -> sb.append(k).append(" ").append(getters.get(k).get()).append('\n'));
+        getters.keySet().stream().sorted().forEach(k ->
+                sb.append(k).append(" ").append(getters.get(k).get()).append('\n'));
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
             writer.write(sb.toString());
             writer.flush();

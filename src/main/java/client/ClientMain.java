@@ -89,6 +89,13 @@ public class ClientMain extends SimpleApplication {
                 connect((LoginMessage) message);
             else if (message instanceof TextMessage)
                 log.info(((TextMessage) message).text);
+            else if (message instanceof DisconnectMessage) {
+                int playerId = ((DisconnectMessage) message).playerId;
+                if (playerId != myId) {
+                    rootNode.detachChild(players.get(playerId));
+                    players.remove(playerId);
+                }
+            }
         }
     }
 

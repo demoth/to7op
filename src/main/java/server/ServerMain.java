@@ -122,8 +122,10 @@ public class ServerMain extends SimpleApplication {
     // todo: move to update loop. remove disconnecting player from physics model
     private void disconnect(HostedConnection conn, Message message) {
         log.info("disconnecting: " + players.get(conn.getId()).login);
+        bulletAppState.getPhysicsSpace().remove(players.get(conn.getId()).control);
         players.remove(conn.getId());
         log.info("remaining players: " + players.size());
+        server.broadcast(new DisconnectMessage(conn.getId()));
         conn.close("Goodbye");
     }
 

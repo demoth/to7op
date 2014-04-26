@@ -8,5 +8,14 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable
 public class DisconnectMessage extends AbstractMessage {
+    public int playerId;
 
+    public DisconnectMessage(int playerId) {
+        this();
+        this.playerId = playerId;
+    }
+
+    public DisconnectMessage() {
+        setReliable(true);
+    }
 }
