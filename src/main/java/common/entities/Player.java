@@ -17,10 +17,9 @@ public class Player {
     public HostedConnection conn;
     public Vector3f view = new Vector3f();
 
-    public Player(int id, String login, long startTime) {
+    public Player(int id, String login) {
         this.id = id;
         this.login = login;
         this.currentState = new ResponseMessage();
-        this.startTime = startTime;
     }
 }

@@ -66,7 +66,7 @@ public class ClientMain extends SimpleApplication {
         log.info("Configured inputs, starting...");
         net.start();
         log.info("Client started, sending login message...");
-        net.send(new LoginMessage("" + System.currentTimeMillis(), cl_pass, 0, System.currentTimeMillis(), ""));
+        net.send(new LoginRequestMessage("" + System.currentTimeMillis(), cl_pass));
     }
 
     @Override
@@ -85,8 +85,8 @@ public class ClientMain extends SimpleApplication {
                 processResponse((ResponseMessage) message);
             else if (message instanceof PlayerJoinedMessage)
                 addPlayer((PlayerJoinedMessage) message);
-            else if (message instanceof LoginMessage)
-                connect((LoginMessage) message);
+            else if (message instanceof LoggedInMessage)
+                connect((LoggedInMessage) message);
             else if (message instanceof TextMessage)
                 log.info(((TextMessage) message).text);
             else if (message instanceof DisconnectMessage) {
@@ -126,9 +126,9 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void connect(LoginMessage message) {
+    private void connect(LoggedInMessage message) {
         myId = message.id;
-        log.info("LoginMessage received: " + message);
+        log.info("LoggedInMessage received: " + message);
         loadMap(message.map);
         new Thread(() -> {
             while (running) {

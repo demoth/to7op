@@ -108,7 +108,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addMessageListeners() {
-        server.addMessageListener(this::addPlayer, LoginMessage.class);
+        server.addMessageListener(this::addPlayer, LoginRequestMessage.class);
         server.addMessageListener(this::queueRequest, RequestMessage.class);
         server.addMessageListener(this::disconnect, DisconnectMessage.class);
     }
@@ -119,7 +119,6 @@ public class ServerMain extends SimpleApplication {
         requests.add(message);
     }
 
-    // todo: move to update loop. remove disconnecting player from physics model
     private void disconnect(HostedConnection conn, Message message) {
         log.info("disconnecting: " + players.get(conn.getId()).login);
         bulletAppState.getPhysicsSpace().remove(players.get(conn.getId()).control);
@@ -130,12 +129,12 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
-        log.info("LoginMessage received: " + message);
+        log.info("LoggedInMessage received: " + message);
         log.info("ID: " + conn.getId());
-        LoginMessage msg = (LoginMessage) message;
+        LoginRequestMessage msg = (LoginRequestMessage) message;
         if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
-        Player player = new Player(conn.getId(), msg.login, msg.startTime);
+        Player player = new Player(conn.getId(), msg.login);
         player.conn = conn;
 
         player.control = createPlayerPhysics();
@@ -143,7 +142,7 @@ public class ServerMain extends SimpleApplication {
 
         players.put(conn.getId(), player);
         server.broadcast(new PlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
-        server.broadcast(in(conn), new LoginMessage(msg.login, "", player.id, 0, g_map));
+        server.broadcast(in(conn), new LoggedInMessage(msg.login, "", player.id, 0, g_map));
     }
 
     private CharacterControl createPlayerPhysics() {

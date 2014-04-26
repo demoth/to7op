@@ -4,13 +4,16 @@ import com.jme3.network.serializing.Serializer;
 import common.messages.*;
 
 /**
- * Created by daniil on 4/6/14.
+ * Util class to keep the make registration the same on both client & server.
+ *
+ * @author demoth
  */
 public class MessageRegistration {
     private MessageRegistration() {}
     public static void registerAll() {
         Serializer.registerClass(DisconnectMessage.class);
-        Serializer.registerClass(LoginMessage.class);
+        Serializer.registerClass(LoggedInMessage.class);
+        Serializer.registerClass(LoginRequestMessage.class);
         Serializer.registerClass(TextMessage.class);
         Serializer.registerClass(RequestMessage.class);
         Serializer.registerClass(ResponseMessage.class);
