@@ -5,7 +5,9 @@ import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
 /**
- * Created by demoth on 24.04.14.
+ * Sent to clients to indicate new player has joined the game.
+ *
+ * @author demoth
  */
 @Serializable
 public class PlayerJoinedMessage extends AbstractMessage {

@@ -3,6 +3,13 @@ package common.messages;
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
+/**
+ * Sent to server to indicate that player wants to join (with fields login & password).
+ * Sent to client to indicate that credentials are ok and player is now in game on server
+ * (with fields map - map name, id - player's id).
+ *
+ * @author demoth
+ */
 @Serializable
 public class LoginMessage extends AbstractMessage{
     public String login;

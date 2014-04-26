@@ -5,7 +5,10 @@ import com.jme3.network.serializing.Serializable;
 
 
 /**
- * Created by demoth on 22.04.14.
+ * This structure contains information on players' state changes (like position and view direction).
+ * {@link common.messages.ResponseMessage}
+ *
+ * @author demoth
  */
 @Serializable
 public class PlayerStateChange {

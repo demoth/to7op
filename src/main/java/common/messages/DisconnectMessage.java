@@ -4,7 +4,10 @@ import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
 /**
- * Created by demoth on 22.04.14.
+ * Sent to server to indicate that client is going to disconnect.
+ * Sent to all client to tell them the player with <code>playerId</code> is leaving.
+ *
+ * @author demoth
  */
 @Serializable
 public class DisconnectMessage extends AbstractMessage {
