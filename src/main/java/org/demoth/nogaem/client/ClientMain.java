@@ -17,6 +17,7 @@ import com.jme3.network.Message;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
+import org.apache.commons.cli.CommandLine;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.messages.*;
@@ -41,7 +42,7 @@ public class ClientMain extends SimpleApplication {
     private long sentButtons = 0;
     private Vector3f sentDirection = new Vector3f();
 
-    public static void main(String... args) {
+    public static void run(CommandLine args) {
         new ClientMain().start(JmeContext.Type.Display);
     }
 
@@ -114,13 +115,11 @@ public class ClientMain extends SimpleApplication {
     private void processResponse(ResponseMessage message) {
         message.changes.forEach(change -> {
             if (change.playerId == myId) {
-                log.info("i (" + myId + ") moved to " + change.pos);
                 cam.setLocation(change.pos);
             }
             else {
                 Spatial spatial = players.get(change.playerId);
                 if (spatial != null) {
-                    log.info("player " + change.playerId + " moved to " + change.pos);
                     spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
                     spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
                 }

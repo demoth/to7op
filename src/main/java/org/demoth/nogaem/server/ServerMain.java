@@ -15,6 +15,9 @@ import com.jme3.network.Network;
 import com.jme3.network.Server;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
+import org.demoth.nogaem.common.Config;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.entities.Player;
@@ -39,7 +42,7 @@ public class ServerMain extends SimpleApplication {
     private BulletAppState bulletAppState;
     private boolean running = true;
 
-    public static void main(String... args) {
+    public static void run(CommandLine args) {
         new ServerMain().start(JmeContext.Type.Headless);
     }
 
