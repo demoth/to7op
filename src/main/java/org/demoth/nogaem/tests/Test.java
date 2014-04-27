@@ -1,7 +1,7 @@
-package tests;
+package org.demoth.nogaem.tests;
 
-import client.ClientMain;
-import server.ServerMain;
+import org.demoth.nogaem.client.ClientMain;
+import org.demoth.nogaem.server.ServerMain;
 
 /**
  * Created by daniil on 10.04.14.

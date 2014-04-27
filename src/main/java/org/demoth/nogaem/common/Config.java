@@ -1,4 +1,4 @@
-package common;
+package org.demoth.nogaem.common;
 
 import com.jme3.math.Vector3f;
 

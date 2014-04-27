@@ -1,4 +1,4 @@
-package common.messages;
+package org.demoth.nogaem.common.messages;
 
 import com.jme3.math.Vector3f;
 import com.jme3.network.serializing.Serializable;
@@ -6,7 +6,7 @@ import com.jme3.network.serializing.Serializable;
 
 /**
  * This structure contains information on players' state changes (like position and view direction).
- * {@link common.messages.ResponseMessage}
+ * {@link org.demoth.nogaem.common.messages.ResponseMessage}
  *
  * @author demoth
  */

@@ -1,4 +1,4 @@
-package server;
+package org.demoth.nogaem.server;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
@@ -15,10 +15,10 @@ import com.jme3.network.Network;
 import com.jme3.network.Server;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.Constants;
-import common.MessageRegistration;
-import common.entities.Player;
-import common.messages.*;
+import org.demoth.nogaem.common.Constants;
+import org.demoth.nogaem.common.MessageRegistration;
+import org.demoth.nogaem.common.entities.Player;
+import org.demoth.nogaem.common.messages.*;
 
 import java.io.IOException;
 import java.util.Map;
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
-import static common.Config.*;
+import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Server");

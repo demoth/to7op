@@ -1,9 +1,9 @@
-package common.entities;
+package org.demoth.nogaem.common.entities;
 
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.Vector3f;
 import com.jme3.network.HostedConnection;
-import common.messages.ResponseMessage;
+import org.demoth.nogaem.common.messages.ResponseMessage;
 
 /**
  * Created by daniil on 2/24/14.

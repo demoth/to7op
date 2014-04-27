@@ -1,6 +1,7 @@
 apply plugin: 'java'
+apply plugin:'application'
 
-libsDirName = 'release'
+mainClassName = "org.demoth.nogaem.App"
 
 repositories {
     mavenCentral()
@@ -11,21 +12,6 @@ dependencies {
     compile 'commons-cli:commons-cli:1.2'
 }
 
-task('copylibs', type: Copy) {
-    from(file('lib'))
-    into(file('build/release/lib'))
-}
-
-task('copydata', type: Copy) {
-    from(file('data'))
-    into(file('build/release/data'))
-}
-
-task('copyscripts', type: Copy) {
-    from(file('scripts'))
-    into(file('build/release'))
-}
-
-task('release', dependsOn: ['jar','copylibs','copydata','copyscripts']) {
-
+applicationDistribution.from('data') {
+    into 'data'
 }

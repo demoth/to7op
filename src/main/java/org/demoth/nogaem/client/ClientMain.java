@@ -1,4 +1,4 @@
-package client;
+package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
@@ -17,9 +17,9 @@ import com.jme3.network.Message;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import common.Constants;
-import common.MessageRegistration;
-import common.messages.*;
+import org.demoth.nogaem.common.Constants;
+import org.demoth.nogaem.common.MessageRegistration;
+import org.demoth.nogaem.common.messages.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
-import static common.Config.*;
-import static common.Constants.Actions.*;
+import static org.demoth.nogaem.common.Config.*;
+import static org.demoth.nogaem.common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
     private static final Logger log = Logger.getLogger("Client");
@@ -113,11 +113,14 @@ public class ClientMain extends SimpleApplication {
     // update
     private void processResponse(ResponseMessage message) {
         message.changes.forEach(change -> {
-            if (change.playerId == myId)
+            if (change.playerId == myId) {
+                log.info("i (" + myId + ") moved to " + change.pos);
                 cam.setLocation(change.pos);
+            }
             else {
                 Spatial spatial = players.get(change.playerId);
                 if (spatial != null) {
+                    log.info("player " + change.playerId + " moved to " + change.pos);
                     spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
                     spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
                 }

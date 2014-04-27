@@ -1,4 +1,4 @@
-package common;
+package org.demoth.nogaem.common;
 
 /**
  * Created by daniil on 2/28/14.

@@ -1,4 +1,4 @@
-package tests;
+package org.demoth.nogaem.tests;
 
 import com.jme3.math.Vector3f;
 

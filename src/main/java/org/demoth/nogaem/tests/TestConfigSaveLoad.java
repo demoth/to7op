@@ -1,6 +1,6 @@
-package tests;
+package org.demoth.nogaem.tests;
 
-import common.Config;
+import org.demoth.nogaem.common.Config;
 
 /**
  * Created by demoth on 26.04.14.

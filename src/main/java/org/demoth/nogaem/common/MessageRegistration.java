@@ -1,7 +1,7 @@
-package common;
+package org.demoth.nogaem.common;
 
 import com.jme3.network.serializing.Serializer;
-import common.messages.*;
+import org.demoth.nogaem.common.messages.*;
 
 /**
  * Util class to keep the make registration the same on both client & server.
