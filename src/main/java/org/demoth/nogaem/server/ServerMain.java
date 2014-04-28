@@ -131,7 +131,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
-        log.info("LoggedInMessage received (from {0}): {1} ", conn.getId(), message);
+        log.info("LoggedInMessage received", message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
         if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");

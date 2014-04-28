@@ -45,7 +45,7 @@ public class Config {
     //////////////////////////////////////////////////////////////////////////
     public static Map<String, CVar> cvars;
 
-    public static void load(String fileName) {
+    private static void load(String fileName) {
         try {
             Properties props = new Properties();
             props.load(new FileReader(fileName));
@@ -99,7 +99,7 @@ public class Config {
                             field.set(null, src);
                         }
                     } catch (Exception e) {
-                        log.error("Error while setting {0} value: {1}", field.getName(), e.getMessage());
+                        log.error("Error while setting " + field.getName() + '.' + e.getMessage());
                     }
 
                 }, () -> {
@@ -110,7 +110,7 @@ public class Config {
                         }
                         return String.valueOf(field.get(null));
                     } catch (IllegalAccessException e) {
-                        log.error("Error while getting {0} value: {1}", field.getName(), e.getMessage());
+                        log.error("Error while getting " + field.getName() + '.' + e.getMessage());
                         return "";
                     }
                 }));

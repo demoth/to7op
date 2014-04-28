@@ -11,35 +11,40 @@ import com.jme3.input.controls.*;
 import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.scene.Spatial;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Example 9 - How to make walls and floors solid.
  * This collision code uses Physics and a custom Action Listener.
+ *
  * @author normen, with edits by Zathras
  */
+@RunWith(JUnit4.class)
 public class Example extends SimpleApplication
         implements ActionListener {
 
-    private Spatial sceneModel;
-    private BulletAppState bulletAppState;
-    private RigidBodyControl landscape;
     private CharacterControl player;
     private Vector3f walkDirection = new Vector3f();
-    private boolean left = false, right = false, up = false, down = false;
+    private boolean  left          = false, right = false, up = false, down = false;
 
     //Temporary vectors used on each frame.
     //They here to avoid instantiating new vectors on each frame
-    private Vector3f camDir = new Vector3f();
+    private Vector3f camDir  = new Vector3f();
     private Vector3f camLeft = new Vector3f();
 
-    public static void main(String[] args) {
+    @Test
+    @Ignore
+    public void run() {
         Example app = new Example();
         app.start();
     }
 
     public void simpleInitApp() {
         /* Set up Physics */
-        bulletAppState = new BulletAppState();
+        BulletAppState bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
 
@@ -51,14 +56,14 @@ public class Example extends SimpleApplication
 
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("town.zip", ZipLocator.class);
-        sceneModel = assetManager.loadModel("main.scene");
+        Spatial sceneModel = assetManager.loadModel("main.scene");
         sceneModel.setLocalScale(2f);
 
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
         CollisionShape sceneShape =
                 CollisionShapeFactory.createMeshShape(sceneModel);
-        landscape = new RigidBodyControl(sceneShape, 0);
+        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
         sceneModel.addControl(landscape);
 
         // We set up collision detection for the player by creating
@@ -92,8 +97,10 @@ public class Example extends SimpleApplication
         rootNode.addLight(dl);
     }
 
-    /** We over-write some navigational key mappings here, so we can
-     * add physics-controlled walking and jumping: */
+    /**
+     * We over-write some navigational key mappings here, so we can
+     * add physics-controlled walking and jumping:
+     */
     private void setUpKeys() {
         inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
         inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
@@ -107,19 +114,27 @@ public class Example extends SimpleApplication
         inputManager.addListener(this, "Jump");
     }
 
-    /** These are our custom actions triggered by key presses.
-     * We do not walk yet, we just keep track of the direction the user pressed. */
+    /**
+     * These are our custom actions triggered by key presses.
+     * We do not walk yet, we just keep track of the direction the user pressed.
+     */
     public void onAction(String binding, boolean isPressed, float tpf) {
-        if (binding.equals("Left")) {
-            left = isPressed;
-        } else if (binding.equals("Right")) {
-            right= isPressed;
-        } else if (binding.equals("Up")) {
-            up = isPressed;
-        } else if (binding.equals("Down")) {
-            down = isPressed;
-        } else if (binding.equals("Jump")) {
-            if (isPressed) { player.jump(); }
+        switch (binding) {
+            case "Left":
+                left = isPressed;
+                break;
+            case "Right":
+                right = isPressed;
+                break;
+            case "Up":
+                up = isPressed;
+                break;
+            case "Down":
+                down = isPressed;
+                break;
+            case "Jump":
+                if (isPressed) player.jump();
+                break;
         }
     }
 
