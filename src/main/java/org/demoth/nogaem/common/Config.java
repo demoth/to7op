@@ -3,13 +3,11 @@ package org.demoth.nogaem.common;
 import com.jme3.math.Vector3f;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Created by demoth on 24.04.14.
+ * @author demoth
  */
 public class Config {
     private static final Logger log = Logger.getLogger("Config");
@@ -42,60 +40,39 @@ public class Config {
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES END         /////////////////////
     //////////////////////////////////////////////////////////////////////////
-
-    public static interface Setter {
-        void set(String src);
-    }
-
-    public static interface Getter {
-        String get();
-    }
-
-    public static Map<String, Setter> setters;
-    public static Map<String, Getter> getters;
+    public static Map<String, CVar> cvars;
 
     public static void load(String fileName) {
         try {
-            new BufferedReader(new FileReader(fileName)).lines().forEach(line -> {
-                String parts[] = line.split(" ");
-                if (setters.containsKey(parts[0]))
-                    setters.get(parts[0]).set(parts[1]);
-            });
-        } catch (FileNotFoundException e) {
-            log.severe(e.getMessage());
-        }
-    }
-
-    public static void save(String fileName) {
-        StringBuilder sb = new StringBuilder();
-        getters.keySet().stream().sorted().forEach(k ->
-                sb.append(k).append(" ").append(getters.get(k).get()).append('\n'));
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            writer.write(sb.toString());
-            writer.flush();
+            Properties props = new Properties();
+            props.load(new FileReader(fileName));
+            props.forEach((key, value) -> cvars.get(String.valueOf(key)).set(String.valueOf(value)));
         } catch (IOException e) {
             log.severe(e.getMessage());
         }
     }
 
+    public static void save(String fileName) {
+        Properties props = new Properties();
+        cvars.keySet().stream().sorted().forEach(k ->
+                props.put(k, cvars.get(k)));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            props.store(writer, "Saved on " + new Date());
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
+    }
     static {
-        setters = new HashMap<>();
-        getters = new HashMap<>();
+        cvars = new HashMap<>();
+        Properties desc = new Properties();
+        try {
+            desc.load(Config.class.getResourceAsStream("/cvar_descriptions.properties"));
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        }
         Arrays.stream(Config.class.getDeclaredFields()).forEach(field -> {
-            if (field.getName().contains("_")) {
-                getters.put(field.getName(), () -> {
-                    try {
-                        if (field.getType() == Vector3f.class) {
-                            Vector3f v = (Vector3f) field.get(null);
-                            return "" + v.x + ' ' + v.y + ' ' + v.z;
-                        }
-                        return String.valueOf(field.get(null));
-                    } catch (IllegalAccessException e) {
-                        log.severe("Error while getting " + field.getName() + " value:" + e.getMessage());
-                        return "";
-                    }
-                });
-                setters.put(field.getName(), src -> {
+            if (!field.getName().equals("cvars")) {
+                cvars.put(field.getName(), new CVar(desc.getProperty(field.getName()), src -> {
                     try {
                         if (field.getType() == boolean.class) {
                             field.set(null, Boolean.parseBoolean(src));
@@ -119,8 +96,48 @@ public class Config {
                     } catch (Exception e) {
                         log.severe("Error while setting " + field.getName() + " value:" + e.getMessage());
                     }
-                });
+
+                }, () -> {
+                    try {
+                        if (field.getType() == Vector3f.class) {
+                            Vector3f v = (Vector3f) field.get(null);
+                            return "" + v.x + ' ' + v.y + ' ' + v.z;
+                        }
+                        return String.valueOf(field.get(null));
+                    } catch (IllegalAccessException e) {
+                        log.severe("Error while getting " + field.getName() + " value:" + e.getMessage());
+                        return "";
+                    }
+                }));
             }
         });
+    }
+
+    static interface Getter {
+        String get();
+    }
+
+    static interface Setter {
+        void set(String s);
+    }
+
+    public static class CVar {
+        public final String description;
+        public final Setter setter;
+        public final Getter getter;
+
+        public CVar(String description, Setter setter, Getter getter) {
+            this.description = description;
+            this.setter = setter;
+            this.getter = getter;
+        }
+
+        public void set(String src) {
+            setter.set(src);
+        }
+
+        public String get() {
+            return getter.get();
+        }
     }
 }

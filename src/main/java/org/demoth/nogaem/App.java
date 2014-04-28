@@ -13,8 +13,14 @@ public class App {
         Options options = new Options();
         options.addOption("server", false, "Start nogaem server");
         options.addOption("client", false, "Start client server");
-        Config.getters.keySet().forEach(o -> options.addOption(o, true, ""));
-        CommandLine cmd = new GnuParser().parse(options, args);
+        Config.cvars.forEach((k, o) -> options.addOption(k, true, o.description));
+        CommandLine cmd;
+        try {
+            cmd = new GnuParser().parse(options, args);
+        } catch (ParseException e) {
+            new HelpFormatter().printHelp("nogaem", options);
+            return;
+        }
         if (cmd.hasOption("server"))
             ServerMain.run(cmd);
         else if (cmd.hasOption("client"))
