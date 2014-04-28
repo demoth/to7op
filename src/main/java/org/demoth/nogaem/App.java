@@ -17,20 +17,28 @@ public class App {
 
         try {
             CommandLine cmd = new GnuParser().parse(options, args);
-            Config.cvars.forEach((k, cvar) -> {
-                if (cmd.hasOption(k))
-                    cvar.set(cmd.getOptionValue(k));
-            });
-            if (cmd.hasOption("server"))
+
+            if (cmd.hasOption("server")) {
+                Config.loadOrSave("server.cfg");
+                setCvarsFromCmdline(cmd);
                 ServerMain.run(cmd);
-            else if (cmd.hasOption("client"))
+            } else if (cmd.hasOption("client")) {
+                Config.loadOrSave("client.cfg");
+                setCvarsFromCmdline(cmd);
                 ClientMain.run(cmd);
-            else
+            } else
                 printUsage(options);
 
         } catch (ParseException e) {
             printUsage(options);
         }
+    }
+
+    private static void setCvarsFromCmdline(CommandLine cmd) {
+        Config.cvars.forEach((k, cvar) -> {
+            if (cmd.hasOption(k))
+                cvar.set(cmd.getOptionValue(k));
+        });
     }
 
     private static void printUsage(Options options) {

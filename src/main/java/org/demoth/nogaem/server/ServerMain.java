@@ -104,7 +104,7 @@ public class ServerMain extends SimpleApplication {
         super.destroy();
     }
 
-    private void sendResponses(){
+    private void sendResponses() {
         server.broadcast(new ResponseMessage(players.values().stream()
                 .map(p -> new PlayerStateChange(p.id, p.view, p.control.getPhysicsLocation()))
                 .collect(Collectors.toList())));

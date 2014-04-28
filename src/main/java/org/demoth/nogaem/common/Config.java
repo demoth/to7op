@@ -3,6 +3,8 @@ package org.demoth.nogaem.common;
 import com.jme3.math.Vector3f;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -55,9 +57,10 @@ public class Config {
     public static void save(String fileName) {
         Properties props = new Properties();
         cvars.keySet().stream().sorted().forEach(k ->
-                props.put(k, cvars.get(k)));
+                props.put(k, cvars.get(k).get()));
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-            props.store(writer, "Saved on " + new Date());
+            props.store(writer, "Nogaem configuration");
+            writer.flush();
         } catch (IOException e) {
             log.severe(e.getMessage());
         }
@@ -71,7 +74,7 @@ public class Config {
             log.severe(e.getMessage());
         }
         Arrays.stream(Config.class.getDeclaredFields()).forEach(field -> {
-            if (!field.getName().equals("cvars")) {
+            if (!field.getName().equals("cvars") && !field.getName().equals("log")) {
                 cvars.put(field.getName(), new CVar(desc.getProperty(field.getName()), src -> {
                     try {
                         if (field.getType() == boolean.class) {
@@ -111,6 +114,13 @@ public class Config {
                 }));
             }
         });
+    }
+
+    public static void loadOrSave(String fileName) {
+        if (Files.exists(Paths.get(fileName)))
+            load(fileName);
+        else
+            save(fileName);
     }
 
     static interface Getter {
