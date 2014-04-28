@@ -14,16 +14,26 @@ public class App {
         options.addOption("server", false, "Start nogaem server");
         options.addOption("client", false, "Start client server");
         Config.cvars.forEach((k, o) -> options.addOption(k, true, o.description));
-        CommandLine cmd;
+
         try {
-            cmd = new GnuParser().parse(options, args);
+            CommandLine cmd = new GnuParser().parse(options, args);
+            Config.cvars.forEach((k, cvar) -> {
+                if (cmd.hasOption(k))
+                    cvar.set(cmd.getOptionValue(k));
+            });
+            if (cmd.hasOption("server"))
+                ServerMain.run(cmd);
+            else if (cmd.hasOption("client"))
+                ClientMain.run(cmd);
+            else
+                printUsage(options);
+
         } catch (ParseException e) {
-            new HelpFormatter().printHelp("nogaem", options);
-            return;
+            printUsage(options);
         }
-        if (cmd.hasOption("server"))
-            ServerMain.run(cmd);
-        else if (cmd.hasOption("client"))
-            ClientMain.run(cmd);
+    }
+
+    private static void printUsage(Options options) {
+        new HelpFormatter().printHelp("nogaem [client|server]", options);
     }
 }
