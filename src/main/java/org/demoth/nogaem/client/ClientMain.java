@@ -17,32 +17,32 @@ import com.jme3.network.Message;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import org.apache.commons.cli.CommandLine;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.messages.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Logger;
 
 import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
-    private static final Logger log = Logger.getLogger("Client");
+    private static final Logger log = LoggerFactory.getLogger("Client");
     Client net;
     volatile long buttons;
     ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
     private boolean running = true;
     private int myId;
-    private Map<Integer, Spatial> players = new HashMap<>();
-    private long sentButtons = 0;
-    private Vector3f sentDirection = new Vector3f();
+    private Map<Integer, Spatial> players       = new HashMap<>();
+    private long                  sentButtons   = 0;
+    private Vector3f              sentDirection = new Vector3f();
 
-    public static void run(CommandLine args) {
+    public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
     }
 
@@ -55,9 +55,9 @@ public class ClientMain extends SimpleApplication {
         log.info("Messages registered");
         try {
             net = Network.connectToServer(cl_server, sv_port);
-            log.info("Connected");
+            log.info("Connected to " + cl_server + ':' + sv_port);
         } catch (IOException e) {
-            log.severe(e.getMessage());
+            log.error(e.getMessage(), e);
             System.exit(1);
         }
         // queue all the messages
@@ -72,8 +72,10 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
-        if (net.isConnected())
+        if (net.isConnected()) {
+            log.info("Closing connection...");
             net.close();
+        }
         super.destroy();
     }
 
@@ -138,7 +140,7 @@ public class ClientMain extends SimpleApplication {
                 try {
                     Thread.sleep(cl_sleep);
                 } catch (InterruptedException e) {
-                    log.severe(e.getMessage());
+                    log.error(e.getMessage(), e);
                 }
             }
         }).start();

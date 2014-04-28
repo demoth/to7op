@@ -1,10 +1,11 @@
 package org.demoth.nogaem.tests;
 
 import com.jme3.math.Vector3f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import static org.demoth.nogaem.common.Config.*;
 
@@ -13,7 +14,7 @@ import static org.demoth.nogaem.common.Config.*;
  */
 public class TestConfigSetters {
     public static void main(String[] args) {
-        Logger log = Logger.getLogger("TestConfigSetters");
+        Logger log = LoggerFactory.getLogger("TestConfigSetters");
         Random random = new Random();
         log.info("Config cvars size: " + cvars.size());
 

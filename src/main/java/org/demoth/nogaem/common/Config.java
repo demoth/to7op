@@ -1,18 +1,19 @@
 package org.demoth.nogaem.common;
 
 import com.jme3.math.Vector3f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * @author demoth
  */
 public class Config {
-    private static final Logger log = Logger.getLogger("Config");
+    private static final Logger log = LoggerFactory.getLogger("Config");
 
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES START      //////////////////////
@@ -50,7 +51,7 @@ public class Config {
             props.load(new FileReader(fileName));
             props.forEach((key, value) -> cvars.get(String.valueOf(key)).set(String.valueOf(value)));
         } catch (IOException e) {
-            log.severe(e.getMessage());
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -62,16 +63,17 @@ public class Config {
             props.store(writer, "Nogaem configuration");
             writer.flush();
         } catch (IOException e) {
-            log.severe(e.getMessage());
+            log.error(e.getMessage(), e);
         }
     }
+
     static {
         cvars = new HashMap<>();
         Properties desc = new Properties();
         try {
             desc.load(Config.class.getResourceAsStream("/cvar_descriptions.properties"));
         } catch (IOException e) {
-            log.severe(e.getMessage());
+            log.error(e.getMessage(), e);
         }
         Arrays.stream(Config.class.getDeclaredFields()).forEach(field -> {
             if (!field.getName().equals("cvars") && !field.getName().equals("log")) {
@@ -97,7 +99,7 @@ public class Config {
                             field.set(null, src);
                         }
                     } catch (Exception e) {
-                        log.severe("Error while setting " + field.getName() + " value:" + e.getMessage());
+                        log.error("Error while setting {0} value: {1}", field.getName(), e.getMessage());
                     }
 
                 }, () -> {
@@ -108,7 +110,7 @@ public class Config {
                         }
                         return String.valueOf(field.get(null));
                     } catch (IllegalAccessException e) {
-                        log.severe("Error while getting " + field.getName() + " value:" + e.getMessage());
+                        log.error("Error while getting {0} value: {1}", field.getName(), e.getMessage());
                         return "";
                     }
                 }));

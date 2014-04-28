@@ -15,34 +15,32 @@ import com.jme3.network.Network;
 import com.jme3.network.Server;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
-import org.demoth.nogaem.common.Config;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.entities.Player;
 import org.demoth.nogaem.common.messages.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
 import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMain extends SimpleApplication {
-    private static final Logger log = Logger.getLogger("Server");
-    private static final Vector3f up = new Vector3f(0f, 1f, 0f);
+    private static final Logger   log = LoggerFactory.getLogger("Server");
+    private static final Vector3f up  = new Vector3f(0f, 1f, 0f);
     Server server;
-    Map<Integer, Player> players = new ConcurrentHashMap<>();
+    Map<Integer, Player>           players  = new ConcurrentHashMap<>();
     ConcurrentLinkedQueue<Message> requests = new ConcurrentLinkedQueue<>();
     private BulletAppState bulletAppState;
     private boolean running = true;
 
-    public static void run(CommandLine args) {
+    public static void run() {
         new ServerMain().start(JmeContext.Type.Headless);
     }
 
@@ -60,12 +58,12 @@ public class ServerMain extends SimpleApplication {
                     try {
                         Thread.sleep(sv_sleep);
                     } catch (InterruptedException e) {
-                        log.severe(e.getMessage());
+                        log.error(e.getMessage(), e);
                     }
                 }
             }).start();
         } catch (IOException e) {
-            log.severe(e.getMessage());
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -100,6 +98,7 @@ public class ServerMain extends SimpleApplication {
 
     @Override
     public void destroy() {
+        log.info("Shutting down server...");
         server.close();
         super.destroy();
     }
@@ -132,8 +131,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
-        log.info("LoggedInMessage received: " + message);
-        log.info("ID: " + conn.getId());
+        log.info("LoggedInMessage received (from {0}): {1} ", conn.getId(), message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
         if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
