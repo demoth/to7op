@@ -1,4 +1,4 @@
-package org.demoth.nogaem.common.messages;
+package org.demoth.nogaem.common.messages.server;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;

@@ -18,7 +18,13 @@ import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.entities.Player;
-import org.demoth.nogaem.common.messages.*;
+import org.demoth.nogaem.common.messages.DisconnectMessage;
+import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
+import org.demoth.nogaem.common.messages.client.RequestMessage;
+import org.demoth.nogaem.common.messages.server.LoggedInMessage;
+import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
+import org.demoth.nogaem.common.messages.server.PlayerStateChange;
+import org.demoth.nogaem.common.messages.server.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +38,7 @@ import static com.jme3.network.Filters.in;
 import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMain extends SimpleApplication {
-    private static final Logger   log = LoggerFactory.getLogger("Server");
+    private static final Logger   log = LoggerFactory.getLogger(ServerMain.class);
     private static final Vector3f up  = new Vector3f(0f, 1f, 0f);
     Server server;
     Map<Integer, Player>           players  = new ConcurrentHashMap<>();
@@ -143,7 +149,7 @@ public class ServerMain extends SimpleApplication {
 
         players.put(conn.getId(), player);
         server.broadcast(new PlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
-        server.broadcast(in(conn), new LoggedInMessage(msg.login, "", player.id, 0, g_map));
+        server.broadcast(in(conn), new LoggedInMessage(msg.login, player.id, g_map));
     }
 
     private CharacterControl createPlayerPhysics() {

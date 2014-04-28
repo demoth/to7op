@@ -4,17 +4,19 @@ import org.apache.commons.cli.*;
 import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
 import org.demoth.nogaem.server.ServerMain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+
+import java.util.logging.LogManager;
 
 /**
  * @author demoth
  */
 public class App {
-    private static final Logger log = LoggerFactory.getLogger("main");
-
     public static void main(String... args) throws ParseException {
-        log.info("Welcome to Nogaem!");
+        LogManager.getLogManager().reset();
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
         Options options = new Options();
         options.addOption("server", false, "Start nogaem server");
         options.addOption("client", false, "Start client server");

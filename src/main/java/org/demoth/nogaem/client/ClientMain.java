@@ -19,7 +19,13 @@ import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
-import org.demoth.nogaem.common.messages.*;
+import org.demoth.nogaem.common.messages.DisconnectMessage;
+import org.demoth.nogaem.common.messages.TextMessage;
+import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
+import org.demoth.nogaem.common.messages.client.RequestMessage;
+import org.demoth.nogaem.common.messages.server.LoggedInMessage;
+import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
+import org.demoth.nogaem.common.messages.server.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +38,7 @@ import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
 
 public class ClientMain extends SimpleApplication {
-    private static final Logger log = LoggerFactory.getLogger("Client");
+    private static final Logger log = LoggerFactory.getLogger(ClientMain.class);
     Client net;
     volatile long buttons;
     ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();

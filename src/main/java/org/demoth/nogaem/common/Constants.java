@@ -19,8 +19,6 @@ public interface Constants {
         String LOOK_RIGHT    = "lookRight";
     }
 
-    int updateRate = 50;
-
     interface Masks {
         long WALK_FORWARD  = 1l;
         long WALK_BACKWARD = 1l << 1;

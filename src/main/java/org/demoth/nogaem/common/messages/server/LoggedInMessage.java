@@ -1,4 +1,4 @@
-package org.demoth.nogaem.common.messages;
+package org.demoth.nogaem.common.messages.server;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
@@ -19,7 +19,7 @@ public class LoggedInMessage extends AbstractMessage{
         setReliable(true);
     }
 
-    public LoggedInMessage(String login, String password, Integer id, long startTime, String map) {
+    public LoggedInMessage(String login, Integer id, String map) {
         this.login = login;
         this.id = id;
         this.map = map;

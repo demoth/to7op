@@ -13,7 +13,7 @@ import java.util.*;
  * @author demoth
  */
 public class Config {
-    private static final Logger log = LoggerFactory.getLogger("Config");
+    private static final Logger log = LoggerFactory.getLogger(Config.class);
 
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES START      //////////////////////
