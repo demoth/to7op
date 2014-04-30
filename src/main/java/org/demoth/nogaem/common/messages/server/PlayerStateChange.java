@@ -24,4 +24,13 @@ public class PlayerStateChange {
         this.pos = position;
         this.view = view;
     }
+
+    @Override
+    public String toString() {
+        return "PlayerStateChange{" +
+                "playerId=" + playerId +
+                ", pos=" + pos +
+                ", view=" + view +
+                '}';
+    }
 }

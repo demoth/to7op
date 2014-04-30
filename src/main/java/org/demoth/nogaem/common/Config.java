@@ -20,6 +20,7 @@ public class Config {
     //////////////////////////////////////////////////////////////////////////
     public static int  sv_port  = 5555;
     public static long sv_sleep = 50;
+    public static String rcon_pass = "asdf";
 
     public static float    g_scale             = 2f;
     public static float    g_mass              = 0f;

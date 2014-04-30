@@ -24,4 +24,13 @@ public class LoggedInMessage extends AbstractMessage{
         this.id = id;
         this.map = map;
     }
+
+    @Override
+    public String toString() {
+        return "LoggedInMessage{" +
+                "login='" + login + '\'' +
+                ", map='" + map + '\'' +
+                ", id=" + id +
+                '}';
+    }
 }

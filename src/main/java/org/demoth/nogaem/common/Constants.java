@@ -1,22 +1,23 @@
 package org.demoth.nogaem.common;
 
 /**
- * Created by daniil on 2/28/14.
+ * @author demoth
  */
 public interface Constants {
     interface Actions {
-        String WALK_FORWARD  = "forward";
-        String WALK_BACKWARD = "backward";
-        String STRAFE_LEFT   = "left";
-        String STRAFE_RIGHT  = "right";
-        String FIRE_PRIMARY  = "fire";
-        String JUMP          = "jump";
-        String CROUCH        = "crouch";
-        String USE           = "use";
-        String LOOK_UP       = "lookUp";
-        String LOOK_DOWN     = "lookDown";
-        String LOOK_LEFT     = "lookLeft";
-        String LOOK_RIGHT    = "lookRight";
+        String WALK_FORWARD   = "forward";
+        String WALK_BACKWARD  = "backward";
+        String STRAFE_LEFT    = "left";
+        String STRAFE_RIGHT   = "right";
+        String FIRE_PRIMARY   = "fire";
+        String JUMP           = "jump";
+        String CROUCH         = "crouch";
+        String USE            = "use";
+        String LOOK_UP        = "lookUp";
+        String LOOK_DOWN      = "lookDown";
+        String LOOK_LEFT      = "lookLeft";
+        String LOOK_RIGHT     = "lookRight";
+        String TOGGLE_CONSOLE = "toggleConsole";
     }
 
     interface Masks {

@@ -23,4 +23,12 @@ public class LoginRequestMessage extends AbstractMessage {
     public LoginRequestMessage() {
         setReliable(true);
     }
+
+    @Override
+    public String toString() {
+        return "LoginRequestMessage{" +
+                "login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                '}';
+    }
 }

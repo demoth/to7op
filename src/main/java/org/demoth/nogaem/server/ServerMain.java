@@ -19,7 +19,9 @@ import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.MessageRegistration;
 import org.demoth.nogaem.common.entities.Player;
 import org.demoth.nogaem.common.messages.DisconnectMessage;
+import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
+import org.demoth.nogaem.common.messages.client.RconMessage;
 import org.demoth.nogaem.common.messages.client.RequestMessage;
 import org.demoth.nogaem.common.messages.server.LoggedInMessage;
 import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
@@ -53,10 +55,12 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         MessageRegistration.registerAll();
+        log.info("Registered messages");
         try {
             server = Network.createServer(sv_port);
+            log.info("Created server");
             addMessageListeners();
-            initWorld();
+            initWorld(g_map);
             server.start();
             new Thread(() -> {
                 while (running) {
@@ -73,7 +77,7 @@ public class ServerMain extends SimpleApplication {
         }
     }
 
-    private void initWorld() {
+    private void initWorld(String g_map) {
         // Setup world
             /* Set up Physics */
         bulletAppState = new BulletAppState();
@@ -82,7 +86,7 @@ public class ServerMain extends SimpleApplication {
 
         // We load the scene from the zip file and adjust its size.
         assetManager.registerLocator("data/town.zip", ZipLocator.class);
-        Spatial sceneModel = assetManager.loadModel("main.scene");
+        Spatial sceneModel = assetManager.loadModel(g_map);
         sceneModel.setLocalScale(g_scale);
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
@@ -116,9 +120,15 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addMessageListeners() {
-        server.addMessageListener(this::addPlayer, LoginRequestMessage.class);
-        server.addMessageListener(this::queueRequest, RequestMessage.class);
-        server.addMessageListener(this::disconnect, DisconnectMessage.class);
+        server.addMessageListener(this::addPlayer,      LoginRequestMessage.class);
+        server.addMessageListener(this::queueRequest,   RequestMessage.class);
+        server.addMessageListener(this::disconnect,     DisconnectMessage.class);
+        server.addMessageListener(this::execCommand,    RconMessage.class);
+        server.addMessageListener(this::sendChatMsg,    TextMessage.class);
+    }
+
+    private void sendChatMsg(HostedConnection conn, Message message) {
+        server.broadcast(new TextMessage(players.get(conn.getId()).login + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
@@ -137,7 +147,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
-        log.info("LoggedInMessage received", message);
+        log.info("LoginRequestMessage received", message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
         if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
@@ -183,6 +193,27 @@ public class ServerMain extends SimpleApplication {
         Vector3f left = player.view.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = player.view.multLocal(isWalking).add(left);
         player.control.setWalkDirection(walkDirection.normalize());
+    }
+
+    private void execCommand(HostedConnection conn, Message message) {
+        log.info("Rcon command: " + message);
+        RconMessage msg = (RconMessage) message;
+        if (!rcon_pass.equals(msg.password))
+            return;
+        switch (msg.command) {
+            case stop:
+                running = false;
+                stop();
+                break;
+            case map:
+                break;
+            case set:
+                break;
+            case addbot:
+                break;
+            case kick:
+                break;
+        }
     }
 
     private boolean pressed(long buttons, long desired) {

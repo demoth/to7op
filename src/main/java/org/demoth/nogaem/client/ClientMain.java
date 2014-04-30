@@ -17,11 +17,11 @@ import com.jme3.network.Message;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import org.demoth.nogaem.common.Constants;
-import org.demoth.nogaem.common.MessageRegistration;
+import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.messages.DisconnectMessage;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
+import org.demoth.nogaem.common.messages.client.RconMessage;
 import org.demoth.nogaem.common.messages.client.RequestMessage;
 import org.demoth.nogaem.common.messages.server.LoggedInMessage;
 import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
+import static org.demoth.nogaem.common.Util.*;
 
 public class ClientMain extends SimpleApplication {
     private static final Logger log = LoggerFactory.getLogger(ClientMain.class);
@@ -48,12 +49,20 @@ public class ClientMain extends SimpleApplication {
     private long                  sentButtons   = 0;
     private Vector3f              sentDirection = new Vector3f();
 
+    private SwingConsole console;
+
     public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
     }
 
     @Override
     public void simpleInitApp() {
+        log.info("Starting console...");
+        try {
+            console = new SwingConsole(this::execCommand);
+        } catch (Exception e) {
+            log.error("Could not create console!");
+        }
         MessageRegistration.registerAll();
 //        stateManager.detach(stateManager.getState(FlyCamAppState.class));
 //        stateManager.detach(stateManager.getState(DebugKeysAppState.class));
@@ -73,7 +82,7 @@ public class ClientMain extends SimpleApplication {
         log.info("Configured inputs, starting...");
         net.start();
         log.info("Client started, sending login message...");
-        net.send(new LoginRequestMessage("" + System.currentTimeMillis(), cl_pass));
+        net.send(new LoginRequestMessage(cl_user, cl_pass));
     }
 
     @Override
@@ -81,6 +90,10 @@ public class ClientMain extends SimpleApplication {
         if (net.isConnected()) {
             log.info("Closing connection...");
             net.close();
+        }
+        if (console != null) {
+            log.info("Closing console...");
+            console.dispose();
         }
         super.destroy();
     }
@@ -96,8 +109,10 @@ public class ClientMain extends SimpleApplication {
                 addPlayer((PlayerJoinedMessage) message);
             else if (message instanceof LoggedInMessage)
                 connect((LoggedInMessage) message);
-            else if (message instanceof TextMessage)
+            else if (message instanceof TextMessage) {
                 log.info(((TextMessage) message).text);
+                console.print(((TextMessage) message).text);
+            }
             else if (message instanceof DisconnectMessage) {
                 int playerId = ((DisconnectMessage) message).playerId;
                 if (playerId != myId) {
@@ -160,15 +175,53 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_J));
         inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        inputManager.addMapping(TOGGLE_CONSOLE, new KeyTrigger(KeyInput.KEY_F1));
 
         String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
 
+        inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
             running = false;
             if (net.isConnected())
                 net.send(new DisconnectMessage());
         }, INPUT_MAPPING_EXIT);
+    }
+
+    private void execCommand(String cmdStr) {
+        try {
+            String words[] = cmdStr.trim().split(" ");
+            Command cmd = Command.valueOf(words[0]);
+            switch (cmd) {
+                case quit:
+                    break;
+                case disconnect:
+                    break;
+                case rcon:
+                    String args;
+                    if (words.length > 2)
+                        args = trimFirstWord(trimFirstWord(cmdStr));
+                    else
+                        args = "";
+                    net.send(new RconMessage(RconCommand.valueOf(words[1]), args, rcon_pass));
+                    break;
+                case set:
+                    Config.cvars.get(words[0]).set(trimFirstWord(cmdStr));
+                    break;
+                case say:
+                    net.send(new TextMessage(trimFirstWord(cmdStr)));
+                    break;
+            }
+        } catch (Exception e) {
+            log.info("Wrong command: ", cmdStr);
+            console.print("Wrong command: " + cmdStr + '(' + e.getMessage() + ')');
+        }
+    }
+
+
+    private void toggleConsole(String actionName, boolean pressed, float tpf) {
+        if (!pressed)
+            console.setVisible(!console.isVisible());
     }
 
     private void pushButton(String actionName, boolean pressed, float tpf) {

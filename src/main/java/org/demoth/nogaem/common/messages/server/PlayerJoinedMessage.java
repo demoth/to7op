@@ -25,4 +25,13 @@ public class PlayerJoinedMessage extends AbstractMessage {
         this.login = login;
         this.location = location;
     }
+
+    @Override
+    public String toString() {
+        return "PlayerJoinedMessage{" +
+                "id=" + id +
+                ", login='" + login + '\'' +
+                ", location=" + location +
+                '}';
+    }
 }
