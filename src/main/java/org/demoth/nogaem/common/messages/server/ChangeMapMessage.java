@@ -9,7 +9,7 @@ import com.jme3.network.serializing.Serializable;
 @Serializable
 public class ChangeMapMessage extends AbstractMessage {
 
-    private String mapName;
+    public String mapName;
 
     public ChangeMapMessage() {
         setReliable(true);

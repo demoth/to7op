@@ -9,6 +9,7 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
+import com.jme3.light.Light;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
@@ -23,6 +24,7 @@ import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
 import org.demoth.nogaem.common.messages.client.RconMessage;
 import org.demoth.nogaem.common.messages.client.RequestMessage;
+import org.demoth.nogaem.common.messages.server.ChangeMapMessage;
 import org.demoth.nogaem.common.messages.server.JoinedGameMessage;
 import org.demoth.nogaem.common.messages.server.NewPlayerJoinedMessage;
 import org.demoth.nogaem.common.messages.server.ResponseMessage;
@@ -31,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -50,6 +53,7 @@ public class ClientMain extends SimpleApplication {
     private Vector3f              sentDirection = new Vector3f();
 
     private SwingConsole console;
+    private Thread       sender;
 
     public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
@@ -75,6 +79,8 @@ public class ClientMain extends SimpleApplication {
             log.error(e.getMessage(), e);
             System.exit(1);
         }
+        // We load the scene from the zip file and adjust its size.
+        assetManager.registerLocator("data/town.zip", ZipLocator.class);
         // queue all the messages
         net.addMessageListener((source, m) -> messages.add(m));
         log.info("Added message listeners, configuring inputs...");
@@ -87,6 +93,7 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
+        stopSendingUpdates();
         if (net.isConnected()) {
             log.info("Closing connection...");
             net.close();
@@ -109,11 +116,12 @@ public class ClientMain extends SimpleApplication {
                 addPlayer((NewPlayerJoinedMessage) message);
             else if (message instanceof JoinedGameMessage)
                 connect((JoinedGameMessage) message);
+            else if (message instanceof ChangeMapMessage)
+                loadMap(((ChangeMapMessage) message).mapName);
             else if (message instanceof TextMessage) {
                 log.info(((TextMessage) message).text);
                 console.print(((TextMessage) message).text);
-            }
-            else if (message instanceof DisconnectMessage) {
+            } else if (message instanceof DisconnectMessage) {
                 int playerId = ((DisconnectMessage) message).playerId;
                 if (playerId != myId) {
                     rootNode.detachChild(players.get(playerId));
@@ -139,8 +147,7 @@ public class ClientMain extends SimpleApplication {
         message.changes.forEach(change -> {
             if (change.playerId == myId) {
                 cam.setLocation(change.pos);
-            }
-            else {
+            } else {
                 Spatial spatial = players.get(change.playerId);
                 if (spatial != null) {
                     spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
@@ -155,16 +162,22 @@ public class ClientMain extends SimpleApplication {
         myId = message.id;
         log.info("JoinedGameMessage received: " + message);
         loadMap(message.map);
-        new Thread(() -> {
-            while (running) {
+    }
+
+    private void startSendingUpdates() {
+        log.info("starting sending updates");
+        sender = new Thread(() -> {
+            while (true) {
                 sendRequests();
                 try {
                     Thread.sleep(cl_sleep);
                 } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
+                    log.info("stopped sending updates");
+                    break;
                 }
             }
-        }).start();
+        });
+        sender.start();
     }
 
     // init
@@ -262,23 +275,30 @@ public class ClientMain extends SimpleApplication {
             return buttons & ~button;
     }
 
-    private void loadMap(String map) {
-        // We re-use the flyby camera for rotation, while positioning is handled by physics
+    private void loadMap(String mapName) {
+        log.info("Changing map:" + mapName);
+        stopSendingUpdates();
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         flyCam.setMoveSpeed(0);
+        rootNode.detachAllChildren();
         setUpLight();
-
-        // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("data/town.zip", ZipLocator.class);
-        Spatial sceneModel = assetManager.loadModel(map);
+        Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
+        startSendingUpdates();
+    }
+
+    private void stopSendingUpdates() {
+        if (sender != null)
+            sender.interrupt();
     }
 
     private void setUpLight() {
+        rootNode.getLocalLightList().clear();
+        rootNode.getWorldLightList().clear();
         // We add light so we see the scene
         AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(r_ambient));
+        al.setColor(ColorRGBA.White);
         rootNode.addLight(al);
 
         DirectionalLight dl = new DirectionalLight();
