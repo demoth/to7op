@@ -23,12 +23,10 @@ import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
 import org.demoth.nogaem.common.messages.client.RconMessage;
 import org.demoth.nogaem.common.messages.client.RequestMessage;
-import org.demoth.nogaem.common.messages.server.LoggedInMessage;
-import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
-import org.demoth.nogaem.common.messages.server.PlayerStateChange;
-import org.demoth.nogaem.common.messages.server.ResponseMessage;
+import org.demoth.nogaem.common.messages.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.BASE64Decoder;
 
 import java.io.IOException;
 import java.util.Map;
@@ -40,13 +38,13 @@ import static com.jme3.network.Filters.in;
 import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMain extends SimpleApplication {
-    private static final Logger   log = LoggerFactory.getLogger(ServerMain.class);
-    private static final Vector3f up  = new Vector3f(0f, 1f, 0f);
+    private static final Logger log = LoggerFactory.getLogger(ServerMain.class);
+    private static final Vector3f up = new Vector3f(0f, 1f, 0f);
     Server server;
-    Map<Integer, Player>           players  = new ConcurrentHashMap<>();
+    Map<Integer, Player> players = new ConcurrentHashMap<>();
     ConcurrentLinkedQueue<Message> requests = new ConcurrentLinkedQueue<>();
     private BulletAppState bulletAppState;
-    private boolean running = true;
+    private Thread sender;
 
     public static void run() {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -57,46 +55,38 @@ public class ServerMain extends SimpleApplication {
         MessageRegistration.registerAll();
         log.info("Registered messages");
         try {
+            assetManager.registerLocator("data/town.zip", ZipLocator.class);
             server = Network.createServer(sv_port);
             log.info("Created server");
             addMessageListeners();
-            initWorld(g_map);
             server.start();
-            new Thread(() -> {
-                while (running) {
-                    sendResponses();
-                    try {
-                        Thread.sleep(sv_sleep);
-                    } catch (InterruptedException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                }
-            }).start();
+            if (!g_map.isEmpty())
+                changeMap(g_map);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private void initWorld(String g_map) {
-        // Setup world
-            /* Set up Physics */
+
+    private void changeMap(String mapName) {
+        // todo check if mapName is valid
+        log.info("Changing map to: " + mapName);
+        stopSendingUpdates();
+        server.broadcast(new ChangeMapMessage(mapName));
+        stateManager.detach(bulletAppState);
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        //bulletAppState.getPhysicsSpace().enableDebug(assetManager);
-
-        // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("data/town.zip", ZipLocator.class);
-        Spatial sceneModel = assetManager.loadModel(g_map);
+        Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
-        // We set up collision detection for the scene by creating a
-        // compound collision shape and a static RigidBodyControl with mass zero.
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
-        RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, g_mass);
+        RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0f);
         sceneModel.addControl(landscapeControl);
-        // We attach the scene and the player to the rootnode and the physics space,
-        // to make them appear in the game world.
         bulletAppState.getPhysicsSpace().add(landscapeControl);
-        rootNode.attachChild(sceneModel);
+        players.values().forEach(p -> {
+            p.control = createPlayerPhysics();
+            bulletAppState.getPhysicsSpace().add(p.control);
+        });
+        startSendingUpdates();
     }
 
     @Override
@@ -113,18 +103,40 @@ public class ServerMain extends SimpleApplication {
         super.destroy();
     }
 
+    private void startSendingUpdates() {
+        log.info("starting sending updates");
+        sender = new Thread(() -> {
+            while (true) {
+                sendResponses();
+                try {
+                    Thread.sleep(sv_sleep);
+                } catch (InterruptedException e) {
+                    log.info("stopped sending updates");
+                    break;
+                }
+            }
+        });
+        sender.start();
+    }
+
+    private void stopSendingUpdates() {
+        if (sender != null)
+            sender.interrupt();
+    }
+
     private void sendResponses() {
-        server.broadcast(new ResponseMessage(players.values().stream()
-                .map(p -> new PlayerStateChange(p.id, p.view, p.control.getPhysicsLocation()))
-                .collect(Collectors.toList())));
+        if (players.size() > 0)
+            server.broadcast(new ResponseMessage(players.values().stream()
+                    .map(p -> new PlayerStateChange(p.id, p.view, p.control.getPhysicsLocation()))
+                    .collect(Collectors.toList())));
     }
 
     private void addMessageListeners() {
-        server.addMessageListener(this::addPlayer,      LoginRequestMessage.class);
-        server.addMessageListener(this::queueRequest,   RequestMessage.class);
-        server.addMessageListener(this::disconnect,     DisconnectMessage.class);
-        server.addMessageListener(this::execCommand,    RconMessage.class);
-        server.addMessageListener(this::sendChatMsg,    TextMessage.class);
+        server.addMessageListener(this::addPlayer, LoginRequestMessage.class);
+        server.addMessageListener(this::queueRequest, RequestMessage.class);
+        server.addMessageListener(this::disconnect, DisconnectMessage.class);
+        server.addMessageListener(this::execCommand, RconMessage.class);
+        server.addMessageListener(this::sendChatMsg, TextMessage.class);
     }
 
     private void sendChatMsg(HostedConnection conn, Message message) {
@@ -158,8 +170,8 @@ public class ServerMain extends SimpleApplication {
         bulletAppState.getPhysicsSpace().add(player.control);
 
         players.put(conn.getId(), player);
-        server.broadcast(new PlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
-        server.broadcast(in(conn), new LoggedInMessage(msg.login, player.id, g_map));
+        server.broadcast(new NewPlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
+        server.broadcast(in(conn), new JoinedGameMessage(msg.login, player.id, g_map));
     }
 
     private CharacterControl createPlayerPhysics() {
@@ -202,10 +214,10 @@ public class ServerMain extends SimpleApplication {
             return;
         switch (msg.command) {
             case stop:
-                running = false;
                 stop();
                 break;
             case map:
+                changeMap(msg.args);
                 break;
             case set:
                 break;

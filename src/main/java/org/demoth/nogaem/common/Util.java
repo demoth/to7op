@@ -5,6 +5,6 @@ package org.demoth.nogaem.common;
  */
 public class Util {
     public static String trimFirstWord(String str) {
-        return str.substring(str.indexOf(' '), str.length());
+        return str.substring(str.indexOf(' '), str.length()).trim();
     }
 }

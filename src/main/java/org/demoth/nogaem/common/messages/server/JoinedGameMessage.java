@@ -10,16 +10,16 @@ import com.jme3.network.serializing.Serializable;
  * @author demoth
  */
 @Serializable
-public class LoggedInMessage extends AbstractMessage{
+public class JoinedGameMessage extends AbstractMessage{
     public String login;
     public String map;
     public Integer id;
 
-    public LoggedInMessage() {
+    public JoinedGameMessage() {
         setReliable(true);
     }
 
-    public LoggedInMessage(String login, Integer id, String map) {
+    public JoinedGameMessage(String login, Integer id, String map) {
         this.login = login;
         this.id = id;
         this.map = map;
@@ -27,7 +27,7 @@ public class LoggedInMessage extends AbstractMessage{
 
     @Override
     public String toString() {
-        return "LoggedInMessage{" +
+        return "JoinedGameMessage{" +
                 "login='" + login + '\'' +
                 ", map='" + map + '\'' +
                 ", id=" + id +

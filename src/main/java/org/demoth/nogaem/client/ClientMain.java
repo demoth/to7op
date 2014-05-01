@@ -23,8 +23,8 @@ import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
 import org.demoth.nogaem.common.messages.client.RconMessage;
 import org.demoth.nogaem.common.messages.client.RequestMessage;
-import org.demoth.nogaem.common.messages.server.LoggedInMessage;
-import org.demoth.nogaem.common.messages.server.PlayerJoinedMessage;
+import org.demoth.nogaem.common.messages.server.JoinedGameMessage;
+import org.demoth.nogaem.common.messages.server.NewPlayerJoinedMessage;
 import org.demoth.nogaem.common.messages.server.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,10 +105,10 @@ public class ClientMain extends SimpleApplication {
             Message message = messages.poll();
             if (message instanceof ResponseMessage)
                 processResponse((ResponseMessage) message);
-            else if (message instanceof PlayerJoinedMessage)
-                addPlayer((PlayerJoinedMessage) message);
-            else if (message instanceof LoggedInMessage)
-                connect((LoggedInMessage) message);
+            else if (message instanceof NewPlayerJoinedMessage)
+                addPlayer((NewPlayerJoinedMessage) message);
+            else if (message instanceof JoinedGameMessage)
+                connect((JoinedGameMessage) message);
             else if (message instanceof TextMessage) {
                 log.info(((TextMessage) message).text);
                 console.print(((TextMessage) message).text);
@@ -124,7 +124,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void addPlayer(PlayerJoinedMessage message) {
+    private void addPlayer(NewPlayerJoinedMessage message) {
         if (message.id == myId)
             return;
         Spatial model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
@@ -151,9 +151,9 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void connect(LoggedInMessage message) {
+    private void connect(JoinedGameMessage message) {
         myId = message.id;
-        log.info("LoggedInMessage received: " + message);
+        log.info("JoinedGameMessage received: " + message);
         loadMap(message.map);
         new Thread(() -> {
             while (running) {
@@ -190,26 +190,35 @@ public class ClientMain extends SimpleApplication {
 
     private void execCommand(String cmdStr) {
         try {
-            String words[] = cmdStr.trim().split(" ");
-            Command cmd = Command.valueOf(words[0]);
+            String trimmed = cmdStr.trim();
+            Command cmd;
+            String[] words = {""};
+            if (trimmed.contains(" ")) {
+                words = trimmed.split(" ");
+                cmd = Command.valueOf(words[0]);
+            } else {
+                cmd = Command.valueOf(trimmed);
+            }
             switch (cmd) {
                 case quit:
                     break;
                 case disconnect:
                     break;
                 case rcon:
+                    if (words.length < 2)
+                        break;
                     String args;
                     if (words.length > 2)
-                        args = trimFirstWord(trimFirstWord(cmdStr));
+                        args = trimFirstWord(trimFirstWord(trimmed));
                     else
                         args = "";
                     net.send(new RconMessage(RconCommand.valueOf(words[1]), args, rcon_pass));
                     break;
                 case set:
-                    Config.cvars.get(words[0]).set(trimFirstWord(cmdStr));
+                    Config.cvars.get(words[0]).set(trimFirstWord(trimmed));
                     break;
                 case say:
-                    net.send(new TextMessage(trimFirstWord(cmdStr)));
+                    net.send(new TextMessage(trimFirstWord(trimmed)));
                     break;
             }
         } catch (Exception e) {

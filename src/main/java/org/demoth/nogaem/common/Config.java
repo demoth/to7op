@@ -23,7 +23,6 @@ public class Config {
     public static String rcon_pass = "asdf";
 
     public static float    g_scale             = 2f;
-    public static float    g_mass              = 0f;
     public static float    g_player_radius     = 1.5f;
     public static float    g_player_height     = 6f;
     public static int      g_player_axis       = 1;
@@ -51,7 +50,7 @@ public class Config {
             Properties props = new Properties();
             props.load(new FileReader(fileName));
             props.forEach((key, value) -> cvars.get(String.valueOf(key)).set(String.valueOf(value)));
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
