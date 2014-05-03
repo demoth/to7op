@@ -52,7 +52,7 @@ public class ServerMain extends SimpleApplication {
         log.info("Registered messages");
         try {
             assetManager.registerLocator("data/town.zip", ZipLocator.class);
-            server = Network.createServer(sv_port);
+            server = Network.createServer(port);
             log.info("Created server");
             addMessageListeners();
             server.start();
@@ -69,8 +69,8 @@ public class ServerMain extends SimpleApplication {
                     server.broadcast(new DisconnectMessage(conn.getId()));
                 }
             });
-            if (!g_map.isEmpty())
-                changeMap(g_map);
+            if (!map.isEmpty())
+                changeMap(map);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -177,7 +177,7 @@ public class ServerMain extends SimpleApplication {
 
         players.put(conn.getId(), player);
         server.broadcast(new NewPlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
-        server.broadcast(in(conn), new JoinedGameMessage(msg.login, player.id, g_map));
+        server.broadcast(in(conn), new JoinedGameMessage(msg.login, player.id, map));
     }
 
     private CharacterControl createPlayerPhysics() {

@@ -56,7 +56,7 @@ public class ClientMain extends SimpleApplication {
         // todo move to state
         configureInputs();
         flyCam.setMoveSpeed(0);
-        if (!cl_server.isEmpty())
+        if (!host.isEmpty())
             connect();
     }
 
@@ -84,11 +84,7 @@ public class ClientMain extends SimpleApplication {
 
     @Override
     public void destroy() {
-        stopSendingUpdates();
-        if (net.isConnected()) {
-            log.info("Closing connection...");
-            net.close();
-        }
+        disconnect();
         if (console != null) {
             log.info("Closing console...");
             console.dispose();
@@ -97,18 +93,16 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void connect() {
+        resetClient();
         try {
-            net = Network.connectToServer(cl_server, sv_port);
-            log.info("Connected to " + cl_server + ':' + sv_port);
-            // queue all the messages
+            log.info("Connecting to " + host + ':' + port);
+            net = Network.connectToServer(host, port);
             net.addMessageListener((source, m) -> messages.add(m));
-            log.info("Added message listeners, configuring inputs...");
-            log.info("Starting network client...");
             net.start();
             log.info("Client started, sending login message...");
             net.send(new LoginRequestMessage(cl_user, cl_pass));
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            log.error(e.getMessage());
         }
     }
 
@@ -208,20 +202,18 @@ public class ClientMain extends SimpleApplication {
                     stop();
                     break;
                 case disconnect:
-                    stopSendingUpdates();
-                    unloadMap();
-                    net.close();
+                    disconnect();
                     break;
                 case connect:
-                    if (words.length != 2)
-                        log.warn("usage: connect host[:port]");
-                    if (words[1].contains(":")) {
-                        String[] hostAndPort = words[1].split(":");
-                        sv_port = Integer.valueOf(hostAndPort[1]);
-                        cl_server = hostAndPort[0];
-                    } else
-                        cl_server = words[1];
-                    connect();
+                    switch (words.length) {
+                        case 3:
+                            port = Integer.valueOf(words[2]);
+                        case 2:
+                            host = words[1];
+                        case 1:
+                            disconnect();
+                            connect();
+                    }
                     break;
                 case rcon:
                     if (words.length < 2)
@@ -245,6 +237,20 @@ public class ClientMain extends SimpleApplication {
         } catch (Exception e) {
             log.warn(e.getMessage());
         }
+    }
+
+    private void disconnect() {
+        resetClient();
+        if (net != null && net.isConnected())
+            net.close();
+    }
+
+    private void resetClient() {
+        stopSendingUpdates();
+        rootNode.detachAllChildren();
+        rootNode.getWorldLightList().clear();
+        rootNode.getLocalLightList().clear();
+        viewPort.setBackgroundColor(new ColorRGBA(0f, 0f, 0f, 1f));
     }
 
     private void toggleConsole(String actionName, boolean pressed, float tpf) {
@@ -282,22 +288,14 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void loadMap(String mapName) {
+        resetClient();
         log.info("Changing map:" + mapName);
-        stopSendingUpdates();
-        unloadMap();
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         setUpLight();
         Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
         startSendingUpdates();
-    }
-
-    private void unloadMap() {
-        rootNode.detachAllChildren();
-        rootNode.getWorldLightList().clear();
-        rootNode.getLocalLightList().clear();
-        viewPort.setBackgroundColor(new ColorRGBA(0f, 0f, 0f, 1f));
     }
 
     private void setUpLight() {
