@@ -1,5 +1,11 @@
 package org.demoth.nogaem.client;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -30,11 +36,8 @@ public class SwingConsole extends JFrame {
 
         field = new JTextField();
         field.addActionListener(e -> {
-            String cmd = field.getText();
-            area.append(cmd);
-            area.append("\n");
+            sendAction.execCommand(field.getText());
             field.setText("");
-            sendAction.execCommand(cmd);
         });
         field.addKeyListener(new KeyAdapter() {
             @Override
@@ -43,8 +46,21 @@ public class SwingConsole extends JFrame {
                     SwingUtilities.invokeLater(() -> SwingConsole.this.setVisible(false));
             }
         });
+
         add(field, BorderLayout.SOUTH);
         setSize(640, 480);
+        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+        PatternLayoutEncoder ple = new PatternLayoutEncoder();
+
+        ple.setPattern("%logger{0} - %msg%n");
+        ple.setContext(lc);
+        ple.start();
+        SwingConsoleAppender<ILoggingEvent> appender = new SwingConsoleAppender<>(this);
+        appender.setContext(lc);
+        appender.start();
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.addAppender(appender);
+
     }
 
     public void print(String s) {

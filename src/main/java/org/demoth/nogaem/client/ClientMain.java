@@ -2,51 +2,32 @@ package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
-import com.jme3.input.KeyInput;
-import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.light.AmbientLight;
-import com.jme3.light.DirectionalLight;
-import com.jme3.light.Light;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector3f;
-import com.jme3.network.Client;
-import com.jme3.network.Message;
-import com.jme3.network.Network;
+import com.jme3.input.*;
+import com.jme3.input.controls.*;
+import com.jme3.light.*;
+import com.jme3.math.*;
+import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.messages.DisconnectMessage;
-import org.demoth.nogaem.common.messages.TextMessage;
-import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
-import org.demoth.nogaem.common.messages.client.RconMessage;
-import org.demoth.nogaem.common.messages.client.RequestMessage;
-import org.demoth.nogaem.common.messages.server.ChangeMapMessage;
-import org.demoth.nogaem.common.messages.server.JoinedGameMessage;
-import org.demoth.nogaem.common.messages.server.NewPlayerJoinedMessage;
-import org.demoth.nogaem.common.messages.server.ResponseMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.demoth.nogaem.common.messages.*;
+import org.demoth.nogaem.common.messages.client.*;
+import org.demoth.nogaem.common.messages.server.*;
+import org.slf4j.*;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
-import static org.demoth.nogaem.common.Util.*;
+import static org.demoth.nogaem.common.Util.trimFirstWord;
 
 public class ClientMain extends SimpleApplication {
     private static final Logger log = LoggerFactory.getLogger(ClientMain.class);
     Client net;
     volatile long buttons;
     ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    private boolean running = true;
     private int myId;
     private Map<Integer, Spatial> players       = new HashMap<>();
     private long                  sentButtons   = 0;
@@ -65,12 +46,9 @@ public class ClientMain extends SimpleApplication {
         try {
             console = new SwingConsole(this::execCommand);
         } catch (Exception e) {
-            log.error("Could not create console!");
+            log.error("Could not create console! " + e.getMessage());
         }
         MessageRegistration.registerAll();
-//        stateManager.detach(stateManager.getState(FlyCamAppState.class));
-//        stateManager.detach(stateManager.getState(DebugKeysAppState.class));
-//        stateManager.detach(stateManager.getState(StatsAppState.class));
         log.info("Messages registered");
         try {
             net = Network.connectToServer(cl_server, sv_port);
@@ -94,6 +72,10 @@ public class ClientMain extends SimpleApplication {
     @Override
     public void destroy() {
         stopSendingUpdates();
+        if (net.isConnected()) {
+            log.info("Sending DisconnectMessage...");
+            net.send(new DisconnectMessage());
+        }
         if (net.isConnected()) {
             log.info("Closing connection...");
             net.close();
@@ -160,7 +142,7 @@ public class ClientMain extends SimpleApplication {
     // update
     private void connect(JoinedGameMessage message) {
         myId = message.id;
-        log.info("JoinedGameMessage received: " + message);
+        log.info("logged in successfuly: ");
         loadMap(message.map);
     }
 
@@ -194,11 +176,7 @@ public class ClientMain extends SimpleApplication {
 
         inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
-        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
-            running = false;
-            if (net.isConnected())
-                net.send(new DisconnectMessage());
-        }, INPUT_MAPPING_EXIT);
+        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> destroy(), INPUT_MAPPING_EXIT);
     }
 
     private void execCommand(String cmdStr) {
@@ -214,6 +192,7 @@ public class ClientMain extends SimpleApplication {
             }
             switch (cmd) {
                 case quit:
+                    destroy();
                     break;
                 case disconnect:
                     break;
@@ -225,7 +204,9 @@ public class ClientMain extends SimpleApplication {
                         args = trimFirstWord(trimFirstWord(trimmed));
                     else
                         args = "";
-                    net.send(new RconMessage(RconCommand.valueOf(words[1]), args, rcon_pass));
+                    RconMessage message = new RconMessage(RconCommand.valueOf(words[1]), args, rcon_pass);
+                    log.info("Sending rcon message: " + message);
+                    net.send(message);
                     break;
                 case set:
                     Config.cvars.get(words[0]).set(trimFirstWord(trimmed));
@@ -235,8 +216,7 @@ public class ClientMain extends SimpleApplication {
                     break;
             }
         } catch (Exception e) {
-            log.info("Wrong command: ", cmdStr);
-            console.print("Wrong command: " + cmdStr + '(' + e.getMessage() + ')');
+            log.warn(e.getMessage());
         }
     }
 
