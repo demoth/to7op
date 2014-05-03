@@ -56,23 +56,32 @@ public class ClientMain extends SimpleApplication {
         // todo move to state
         configureInputs();
         flyCam.setMoveSpeed(0);
-        try {
-            net = Network.connectToServer(cl_server, sv_port);
-            log.info("Connected to " + cl_server + ':' + sv_port);
-            // queue all the messages
-            net.addMessageListener((source, m) -> messages.add(m));
-            log.info("Added message listeners, configuring inputs...");
-            log.info("Starting network client...");
-            net.start();
-            log.info("Client started, sending login message...");
-            net.send(new LoginRequestMessage(cl_user, cl_pass));
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            System.exit(1);
+        if (!cl_server.isEmpty())
+            connect();
+    }
+
+    @Override
+    public void update() {
+        super.update();
+        if (!messages.isEmpty()) {
+            Message message = messages.poll();
+            if (message instanceof ResponseMessage)
+                processResponse((ResponseMessage) message);
+            else if (message instanceof NewPlayerJoinedMessage)
+                addPlayer((NewPlayerJoinedMessage) message);
+            else if (message instanceof JoinedGameMessage)
+                logIn((JoinedGameMessage) message);
+            else if (message instanceof ChangeMapMessage)
+                loadMap(((ChangeMapMessage) message).mapName);
+            else if (message instanceof TextMessage)
+                log.info(((TextMessage) message).text);
+            else if (message instanceof DisconnectMessage)
+                removePlayer((DisconnectMessage) message);
+            else if (message instanceof CommandMessage)
+                execCommand(((CommandMessage) message).cmd);
         }
     }
 
-    // call application's exit
     @Override
     public void destroy() {
         stopSendingUpdates();
@@ -87,34 +96,23 @@ public class ClientMain extends SimpleApplication {
         super.destroy();
     }
 
-    private void unloadMap() {
-        rootNode.detachAllChildren();
-        rootNode.getWorldLightList().clear();
-        rootNode.getLocalLightList().clear();
-    }
-
-    @Override
-    public void update() {
-        super.update();
-        if (!messages.isEmpty()) {
-            Message message = messages.poll();
-            if (message instanceof ResponseMessage)
-                processResponse((ResponseMessage) message);
-            else if (message instanceof NewPlayerJoinedMessage)
-                addPlayer((NewPlayerJoinedMessage) message);
-            else if (message instanceof JoinedGameMessage)
-                connect((JoinedGameMessage) message);
-            else if (message instanceof ChangeMapMessage)
-                loadMap(((ChangeMapMessage) message).mapName);
-            else if (message instanceof TextMessage)
-                log.info(((TextMessage) message).text);
-            else if (message instanceof DisconnectMessage)
-                removePlayer((DisconnectMessage) message);
-            else if (message instanceof CommandMessage)
-                execCommand(((CommandMessage) message).cmd);
+    private void connect() {
+        try {
+            net = Network.connectToServer(cl_server, sv_port);
+            log.info("Connected to " + cl_server + ':' + sv_port);
+            // queue all the messages
+            net.addMessageListener((source, m) -> messages.add(m));
+            log.info("Added message listeners, configuring inputs...");
+            log.info("Starting network client...");
+            net.start();
+            log.info("Client started, sending login message...");
+            net.send(new LoginRequestMessage(cl_user, cl_pass));
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
         }
     }
 
+    // update
     private void removePlayer(DisconnectMessage message) {
         int playerId = message.playerId;
         if (playerId != myId) {
@@ -150,7 +148,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void connect(JoinedGameMessage message) {
+    private void logIn(JoinedGameMessage message) {
         myId = message.id;
         log.info("logged in successfuly: ");
         loadMap(message.map);
@@ -170,6 +168,11 @@ public class ClientMain extends SimpleApplication {
             }
         });
         sender.start();
+    }
+
+    private void stopSendingUpdates() {
+        if (sender != null)
+            sender.interrupt();
     }
 
     // init
@@ -205,6 +208,20 @@ public class ClientMain extends SimpleApplication {
                     stop();
                     break;
                 case disconnect:
+                    stopSendingUpdates();
+                    unloadMap();
+                    net.close();
+                    break;
+                case connect:
+                    if (words.length != 2)
+                        log.warn("usage: connect host[:port]");
+                    if (words[1].contains(":")) {
+                        String[] hostAndPort = words[1].split(":");
+                        sv_port = Integer.valueOf(hostAndPort[1]);
+                        cl_server = hostAndPort[0];
+                    } else
+                        cl_server = words[1];
+                    connect();
                     break;
                 case rcon:
                     if (words.length < 2)
@@ -229,7 +246,6 @@ public class ClientMain extends SimpleApplication {
             log.warn(e.getMessage());
         }
     }
-
 
     private void toggleConsole(String actionName, boolean pressed, float tpf) {
         if (!pressed)
@@ -277,9 +293,11 @@ public class ClientMain extends SimpleApplication {
         startSendingUpdates();
     }
 
-    private void stopSendingUpdates() {
-        if (sender != null)
-            sender.interrupt();
+    private void unloadMap() {
+        rootNode.detachAllChildren();
+        rootNode.getWorldLightList().clear();
+        rootNode.getLocalLightList().clear();
+        viewPort.setBackgroundColor(new ColorRGBA(0f, 0f, 0f, 1f));
     }
 
     private void setUpLight() {

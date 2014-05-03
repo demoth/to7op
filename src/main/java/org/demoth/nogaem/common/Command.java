@@ -6,7 +6,8 @@ package org.demoth.nogaem.common;
 public enum  Command {
     quit,
     disconnect,
+    connect,
+    say,
     rcon,
-    set,
-    say
+    set
 }
