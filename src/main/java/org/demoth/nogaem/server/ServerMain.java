@@ -9,10 +9,7 @@ import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.Vector3f;
-import com.jme3.network.HostedConnection;
-import com.jme3.network.Message;
-import com.jme3.network.Network;
-import com.jme3.network.Server;
+import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.Constants;
@@ -26,7 +23,6 @@ import org.demoth.nogaem.common.messages.client.RequestMessage;
 import org.demoth.nogaem.common.messages.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Decoder;
 
 import java.io.IOException;
 import java.util.Map;
@@ -60,6 +56,19 @@ public class ServerMain extends SimpleApplication {
             log.info("Created server");
             addMessageListeners();
             server.start();
+            server.addConnectionListener(new ConnectionListener() {
+                @Override
+                public void connectionAdded(Server server, HostedConnection conn) {
+                    log.info("Client connected from " + conn.getAddress());
+                }
+
+                @Override
+                public void connectionRemoved(Server server, HostedConnection conn) {
+                    removePlayerFromGame(conn);
+                    log.info("Broadcasting disconnectMessage for id:" + conn.getId());
+                    server.broadcast(new DisconnectMessage(conn.getId()));
+                }
+            });
             if (!g_map.isEmpty())
                 changeMap(g_map);
         } catch (IOException e) {
@@ -134,7 +143,6 @@ public class ServerMain extends SimpleApplication {
     private void addMessageListeners() {
         server.addMessageListener(this::addPlayer, LoginRequestMessage.class);
         server.addMessageListener(this::queueRequest, RequestMessage.class);
-        server.addMessageListener(this::disconnect, DisconnectMessage.class);
         server.addMessageListener(this::execCommand, RconMessage.class);
         server.addMessageListener(this::sendChatMsg, TextMessage.class);
     }
@@ -149,13 +157,11 @@ public class ServerMain extends SimpleApplication {
         requests.add(message);
     }
 
-    private void disconnect(HostedConnection conn, Message message) {
+    private void removePlayerFromGame(HostedConnection conn) {
         log.info("disconnecting: " + players.get(conn.getId()).login);
         bulletAppState.getPhysicsSpace().remove(players.get(conn.getId()).control);
         players.remove(conn.getId());
         log.info("remaining players: " + players.size());
-        server.broadcast(new DisconnectMessage(conn.getId()));
-        conn.close("Goodbye");
     }
 
     private void addPlayer(HostedConnection conn, Message message) {

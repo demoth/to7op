@@ -44,38 +44,38 @@ public class ClientMain extends SimpleApplication {
     public void simpleInitApp() {
         log.info("Starting console...");
         try {
-            console = new SwingConsole(this::execCommand);
+            console = new SwingConsole(s -> messages.add(new CommandMessage(s)));
         } catch (Exception e) {
             log.error("Could not create console! " + e.getMessage());
         }
         MessageRegistration.registerAll();
         log.info("Messages registered");
+        // We load the scene from the zip file and adjust its size.
+        assetManager.registerLocator("data/town.zip", ZipLocator.class);
+
+        // todo move to state
+        configureInputs();
+        flyCam.setMoveSpeed(0);
         try {
             net = Network.connectToServer(cl_server, sv_port);
             log.info("Connected to " + cl_server + ':' + sv_port);
+            // queue all the messages
+            net.addMessageListener((source, m) -> messages.add(m));
+            log.info("Added message listeners, configuring inputs...");
+            log.info("Starting network client...");
+            net.start();
+            log.info("Client started, sending login message...");
+            net.send(new LoginRequestMessage(cl_user, cl_pass));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             System.exit(1);
         }
-        // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("data/town.zip", ZipLocator.class);
-        // queue all the messages
-        net.addMessageListener((source, m) -> messages.add(m));
-        log.info("Added message listeners, configuring inputs...");
-        configureInputs();
-        log.info("Configured inputs, starting...");
-        net.start();
-        log.info("Client started, sending login message...");
-        net.send(new LoginRequestMessage(cl_user, cl_pass));
     }
 
+    // call application's exit
     @Override
     public void destroy() {
         stopSendingUpdates();
-        if (net.isConnected()) {
-            log.info("Sending DisconnectMessage...");
-            net.send(new DisconnectMessage());
-        }
         if (net.isConnected()) {
             log.info("Closing connection...");
             net.close();
@@ -85,6 +85,12 @@ public class ClientMain extends SimpleApplication {
             console.dispose();
         }
         super.destroy();
+    }
+
+    private void unloadMap() {
+        rootNode.detachAllChildren();
+        rootNode.getWorldLightList().clear();
+        rootNode.getLocalLightList().clear();
     }
 
     @Override
@@ -100,16 +106,20 @@ public class ClientMain extends SimpleApplication {
                 connect((JoinedGameMessage) message);
             else if (message instanceof ChangeMapMessage)
                 loadMap(((ChangeMapMessage) message).mapName);
-            else if (message instanceof TextMessage) {
+            else if (message instanceof TextMessage)
                 log.info(((TextMessage) message).text);
-                console.print(((TextMessage) message).text);
-            } else if (message instanceof DisconnectMessage) {
-                int playerId = ((DisconnectMessage) message).playerId;
-                if (playerId != myId) {
-                    rootNode.detachChild(players.get(playerId));
-                    players.remove(playerId);
-                }
-            }
+            else if (message instanceof DisconnectMessage)
+                removePlayer((DisconnectMessage) message);
+            else if (message instanceof CommandMessage)
+                execCommand(((CommandMessage) message).cmd);
+        }
+    }
+
+    private void removePlayer(DisconnectMessage message) {
+        int playerId = message.playerId;
+        if (playerId != myId) {
+            rootNode.detachChild(players.get(playerId));
+            players.remove(playerId);
         }
     }
 
@@ -176,7 +186,7 @@ public class ClientMain extends SimpleApplication {
 
         inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
-        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> destroy(), INPUT_MAPPING_EXIT);
+        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> stop(), INPUT_MAPPING_EXIT);
     }
 
     private void execCommand(String cmdStr) {
@@ -192,7 +202,7 @@ public class ClientMain extends SimpleApplication {
             }
             switch (cmd) {
                 case quit:
-                    destroy();
+                    stop();
                     break;
                 case disconnect:
                     break;
@@ -258,9 +268,8 @@ public class ClientMain extends SimpleApplication {
     private void loadMap(String mapName) {
         log.info("Changing map:" + mapName);
         stopSendingUpdates();
+        unloadMap();
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        flyCam.setMoveSpeed(0);
-        rootNode.detachAllChildren();
         setUpLight();
         Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
@@ -274,8 +283,6 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void setUpLight() {
-        rootNode.getLocalLightList().clear();
-        rootNode.getWorldLightList().clear();
         // We add light so we see the scene
         AmbientLight al = new AmbientLight();
         al.setColor(ColorRGBA.White);
