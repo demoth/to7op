@@ -1,4 +1,4 @@
-package org.demoth.nogaem.client;
+package org.demoth.nogaem.client.swing;
 
 import ch.qos.logback.core.AppenderBase;
 

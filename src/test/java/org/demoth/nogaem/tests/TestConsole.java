@@ -1,6 +1,6 @@
 package org.demoth.nogaem.tests;
 
-import org.demoth.nogaem.client.SwingConsole;
+import org.demoth.nogaem.client.swing.SwingConsole;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;

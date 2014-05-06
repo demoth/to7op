@@ -1,7 +1,6 @@
 package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
@@ -9,13 +8,14 @@ import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
+import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.messages.*;
 import org.demoth.nogaem.common.messages.client.*;
 import org.demoth.nogaem.common.messages.server.*;
 import org.slf4j.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -48,10 +48,10 @@ public class ClientMain extends SimpleApplication {
         } catch (Exception e) {
             log.error("Could not create console! " + e.getMessage());
         }
-        MessageRegistration.registerAll();
+        Util.registerMessages();
         log.info("Messages registered");
         // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("data/town.zip", ZipLocator.class);
+        Util.scanDataFolder(assetManager);
 
         // todo move to state
         configureInputs();
@@ -59,6 +59,7 @@ public class ClientMain extends SimpleApplication {
         if (!host.isEmpty())
             connect();
     }
+
 
     @Override
     public void update() {
@@ -102,7 +103,7 @@ public class ClientMain extends SimpleApplication {
             log.info("Client started, sending login message...");
             net.send(new LoginRequestMessage(cl_user, cl_pass));
         } catch (IOException e) {
-            log.error(e.getMessage());
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -291,23 +292,19 @@ public class ClientMain extends SimpleApplication {
         resetClient();
         log.info("Changing map:" + mapName);
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        setUpLight();
-        Spatial sceneModel = assetManager.loadModel(mapName);
-        sceneModel.setLocalScale(g_scale);
-        rootNode.attachChild(sceneModel);
-        startSendingUpdates();
-    }
-
-    private void setUpLight() {
         // We add light so we see the scene
         AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White);
+        al.setColor(ColorRGBA.White.mult(1.3f));
         rootNode.addLight(al);
 
         DirectionalLight dl = new DirectionalLight();
         dl.setColor(ColorRGBA.White);
         dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
         rootNode.addLight(dl);
+        Spatial sceneModel = assetManager.loadModel(mapName);
+        sceneModel.setLocalScale(g_scale);
+        rootNode.attachChild(sceneModel);
+        startSendingUpdates();
     }
 
     private void sendRequests() {

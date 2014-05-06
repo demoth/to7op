@@ -1,11 +1,10 @@
 package org.demoth.nogaem.tests;
 
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.util.StatusPrinter;
-import org.demoth.nogaem.client.SwingConsole;
-import org.demoth.nogaem.client.SwingConsoleAppender;
+import org.demoth.nogaem.client.swing.SwingConsole;
+import org.demoth.nogaem.client.swing.SwingConsoleAppender;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

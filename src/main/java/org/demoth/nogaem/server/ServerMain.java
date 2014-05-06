@@ -12,8 +12,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import org.demoth.nogaem.common.Constants;
-import org.demoth.nogaem.common.MessageRegistration;
+import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.Player;
 import org.demoth.nogaem.common.messages.DisconnectMessage;
 import org.demoth.nogaem.common.messages.TextMessage;
@@ -48,10 +47,10 @@ public class ServerMain extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        MessageRegistration.registerAll();
+        Util.registerMessages();
         log.info("Registered messages");
         try {
-            assetManager.registerLocator("data/town.zip", ZipLocator.class);
+            Util.scanDataFolder(assetManager);
             server = Network.createServer(port);
             log.info("Created server");
             addMessageListeners();
@@ -71,7 +70,7 @@ public class ServerMain extends SimpleApplication {
             });
             if (!map.isEmpty())
                 changeMap(map);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }

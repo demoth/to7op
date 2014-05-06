@@ -1,7 +1,7 @@
 package org.demoth.nogaem.tests;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
+import com.jme3.asset.plugins.*;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.shapes.*;
 import com.jme3.bullet.control.*;
@@ -11,6 +11,7 @@ import com.jme3.input.controls.*;
 import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.scene.Spatial;
+import com.jme3.system.AppSettings;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +36,14 @@ public class Example extends SimpleApplication
     private Vector3f camDir  = new Vector3f();
     private Vector3f camLeft = new Vector3f();
 
+    public Example() {
+        setShowSettings(false);
+        AppSettings settings = new AppSettings(true);
+        settings.setWidth(1000);
+        settings.setHeight(700);
+        setSettings(settings);
+    }
+
     @Test
     @Ignore
     public void run() {
@@ -50,14 +59,14 @@ public class Example extends SimpleApplication
 
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        flyCam.setMoveSpeed(100);
+        flyCam.setMoveSpeed(0);
         setUpKeys();
         setUpLight();
 
         // We load the scene from the zip file and adjust its size.
-        assetManager.registerLocator("town.zip", ZipLocator.class);
-        Spatial sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalScale(2f);
+//        assetManager.registerLocator("data/town.zip", ZipLocator.class);
+        assetManager.registerLocator("data/maps", FileLocator.class);
+        Spatial sceneModel = assetManager.loadModel("box.blend");
 
         // We set up collision detection for the scene by creating a
         // compound collision shape and a static RigidBodyControl with mass zero.
@@ -88,13 +97,18 @@ public class Example extends SimpleApplication
     private void setUpLight() {
         // We add light so we see the scene
         AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
+        al.setColor(ColorRGBA.White.mult(5f));
         rootNode.addLight(al);
 
         DirectionalLight dl = new DirectionalLight();
         dl.setColor(ColorRGBA.White);
         dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
         rootNode.addLight(dl);
+
+        PointLight pl = new PointLight();
+        pl.setPosition(new Vector3f());
+        pl.setRadius(10f);
+        rootNode.addLight(pl);
     }
 
     /**
@@ -164,5 +178,9 @@ public class Example extends SimpleApplication
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+    }
+
+    public static void main(String... args) {
+        new Example().run();
     }
 }
