@@ -10,6 +10,7 @@ import com.jme3.network.serializing.Serializable;
  * @author demoth
  */
 @Serializable
+@Deprecated
 public class DisconnectMessage extends AbstractMessage {
     public int playerId;
 

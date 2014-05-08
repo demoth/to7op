@@ -4,8 +4,7 @@ import org.apache.commons.cli.*;
 import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
 import org.demoth.nogaem.server.ServerMain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.*;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.util.logging.LogManager;

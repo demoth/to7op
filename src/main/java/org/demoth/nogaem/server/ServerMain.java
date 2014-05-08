@@ -1,45 +1,43 @@
 package org.demoth.nogaem.server;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
-import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.control.CharacterControl;
-import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.bullet.collision.shapes.*;
+import com.jme3.bullet.control.*;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.Vector3f;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.Player;
-import org.demoth.nogaem.common.messages.DisconnectMessage;
+import org.demoth.nogaem.common.entities.Entity;
 import org.demoth.nogaem.common.messages.TextMessage;
-import org.demoth.nogaem.common.messages.client.LoginRequestMessage;
-import org.demoth.nogaem.common.messages.client.RconMessage;
-import org.demoth.nogaem.common.messages.client.RequestMessage;
-import org.demoth.nogaem.common.messages.server.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.demoth.nogaem.common.messages.fromClient.*;
+import org.demoth.nogaem.common.messages.fromServer.*;
+import org.slf4j.*;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
 import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMain extends SimpleApplication {
-    private static final Logger log = LoggerFactory.getLogger(ServerMain.class);
-    private static final Vector3f up = new Vector3f(0f, 1f, 0f);
-    Server server;
-    Map<Integer, Player> players = new ConcurrentHashMap<>();
-    ConcurrentLinkedQueue<Message> requests = new ConcurrentLinkedQueue<>();
-    private BulletAppState bulletAppState;
-    private Thread sender;
+    static final Logger   log = LoggerFactory.getLogger(ServerMain.class);
+    static final Vector3f up  = new Vector3f(0f, 1f, 0f);
+
+    final Map<Integer, Entity> entities      = new ConcurrentHashMap<>();
+    final Map<Integer, Player> players       = new ConcurrentHashMap<>();
+    final Collection<Message>  requests      = new ConcurrentLinkedQueue<>();
+    final Collection<Entity>   addedEntities = new ConcurrentLinkedQueue<>();
+    final Collection<Integer>  removedIds    = new ConcurrentLinkedQueue<>();
+    Collection<EntityState> changes = new ConcurrentLinkedQueue<>();
+    Server         server;
+    BulletAppState bulletAppState;
+    Thread         sender;
+    // changes since last server frame
+    long frameIndex = 0;
 
     public static void run() {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -64,8 +62,6 @@ public class ServerMain extends SimpleApplication {
                 @Override
                 public void connectionRemoved(Server server, HostedConnection conn) {
                     removePlayerFromGame(conn);
-                    log.info("Broadcasting disconnectMessage for id:" + conn.getId());
-                    server.broadcast(new DisconnectMessage(conn.getId()));
                 }
             });
             if (!map.isEmpty())
@@ -91,8 +87,8 @@ public class ServerMain extends SimpleApplication {
         sceneModel.addControl(landscapeControl);
         bulletAppState.getPhysicsSpace().add(landscapeControl);
         players.values().forEach(p -> {
-            p.control = createPlayerPhysics();
-            bulletAppState.getPhysicsSpace().add(p.control);
+            p.physics = createPlayerPhysics();
+            bulletAppState.getPhysicsSpace().add(p.physics);
         });
         startSendingUpdates();
     }
@@ -100,8 +96,10 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
+        players.values().forEach(pl -> pl.state.pos = pl.physics.getPhysicsLocation());
         requests.forEach(this::processRequest);
         requests.clear();
+        // updateGameState();
     }
 
     @Override
@@ -133,50 +131,91 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendResponses() {
-        if (players.size() > 0)
-            server.broadcast(new ResponseMessage(players.values().stream()
-                    .map(p -> new PlayerStateChange(p.id, p.view, p.control.getPhysicsLocation()))
-                    .collect(Collectors.toList())));
+        changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
+        frameIndex++;
+        if (players.size() > 0) {
+            //log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
+            players.values().forEach(pl -> {
+                if (pl.isReady)
+                    server.broadcast(in(pl.conn), calculateChanges(pl));
+            });
+        }
+        addedEntities.clear();
+        removedIds.clear();
+    }
+
+    private GameStateChange calculateChanges(Player pl) {
+        //log.info("player " + pl.id + " has " + pl.notConfirmedMessages.size() + " non confirmes msgs.");
+        GameStateChange msg = new GameStateChange();
+        msg.index = frameIndex;
+        msg.added = new HashSet<>(addedEntities);
+        msg.removedIds = new HashSet<>(removedIds);
+        pl.notConfirmedMessages.forEach(gsm -> {
+            if (gsm.added != null)
+                msg.added.addAll(gsm.added);
+            if (gsm.removedIds != null)
+                msg.removedIds.addAll(gsm.removedIds);
+        });
+        pl.notConfirmedMessages.add(msg);
+        msg.changes = changes;
+        return msg;
     }
 
     private void addMessageListeners() {
         server.addMessageListener(this::addPlayer, LoginRequestMessage.class);
-        server.addMessageListener(this::queueRequest, RequestMessage.class);
+        server.addMessageListener(this::queueRequest, ActionMessage.class);
         server.addMessageListener(this::execCommand, RconMessage.class);
         server.addMessageListener(this::sendChatMsg, TextMessage.class);
+        server.addMessageListener(this::acknowledge, Acknowledgement.class);
     }
+    private void acknowledge(HostedConnection conn, Message message) {
+        Acknowledgement ack = (Acknowledgement) message;
+        Player player = players.get(conn.getId());
+        if (player == null)
+            return;
+        if (ack.index == -1) {
+            player.isReady = true;
+            return;
+        }
+        //log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
+        player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
+                m.index <= ack.index).collect(Collectors.toList()));
+        //log.info("after: "+ player.notConfirmedMessages.size());
+        player.lastReceivedMessageIndex = ack.index;
 
+    }
     private void sendChatMsg(HostedConnection conn, Message message) {
-        server.broadcast(new TextMessage(players.get(conn.getId()).login + ':' + ((TextMessage) message).text));
+        server.broadcast(new TextMessage(entities.get(conn.getId()).name + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
-        RequestMessage request = (RequestMessage) message;
+        ActionMessage request = (ActionMessage) message;
         request.playerId = conn.getId();
+        //log.info("Queued request for " + request.playerId + ". " + message);
         requests.add(message);
     }
 
     private void removePlayerFromGame(HostedConnection conn) {
-        log.info("disconnecting: " + players.get(conn.getId()).login);
-        bulletAppState.getPhysicsSpace().remove(players.get(conn.getId()).control);
+        Player player = (Player) entities.get(conn.getId());
+        log.info("disconnecting: " + player.name);
+        bulletAppState.getPhysicsSpace().remove(player.physics);
+        entities.remove(conn.getId());
         players.remove(conn.getId());
+        removedIds.add(conn.getId());
         log.info("remaining players: " + players.size());
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginRequestMessage received", message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
-        if (players.values().stream().anyMatch(p -> p.login.equals(msg.login)))
+        if (players.values().stream().anyMatch(p -> p.name.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
-        Player player = new Player(conn.getId(), msg.login);
-        player.conn = conn;
-
-        player.control = createPlayerPhysics();
-        bulletAppState.getPhysicsSpace().add(player.control);
-
+        Player player = new Player(conn, msg.login, createPlayerPhysics());
+        bulletAppState.getPhysicsSpace().add(player.physics);
+        entities.put(conn.getId(), player);
         players.put(conn.getId(), player);
-        server.broadcast(new NewPlayerJoinedMessage(conn.getId(), msg.login, g_spawn_point));
-        server.broadcast(in(conn), new JoinedGameMessage(msg.login, player.id, map));
+        addedEntities.add(new Entity(conn.getId(), "ninja", msg.login, new EntityState(player)));
+        server.broadcast(in(conn), new JoinedGameMessage(player.id, map));
     }
 
     private CharacterControl createPlayerPhysics() {
@@ -190,11 +229,12 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void processRequest(Message message) {
-        RequestMessage request = (RequestMessage) message;
+        ActionMessage request = (ActionMessage) message;
         Player player = players.get(request.playerId);
         if (player == null)
             return;
-        player.view = new Vector3f(request.view.x, 0f, request.view.z);
+        log.info("Processing request for " + request.playerId);
+        player.state.view = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
@@ -206,10 +246,10 @@ public class ServerMain extends SimpleApplication {
         if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
-            player.control.jump();
-        Vector3f left = player.view.cross(up).multLocal(isStrafing);
-        Vector3f walkDirection = player.view.multLocal(isWalking).add(left);
-        player.control.setWalkDirection(walkDirection.normalize());
+            player.physics.jump();
+        Vector3f left = player.state.view.cross(up).multLocal(isStrafing);
+        Vector3f walkDirection = player.state.view.multLocal(isWalking).add(left);
+        player.physics.setWalkDirection(walkDirection.normalize());
     }
 
     private void execCommand(HostedConnection conn, Message message) {

@@ -1,4 +1,4 @@
-package org.demoth.nogaem.common.messages.client;
+package org.demoth.nogaem.common.messages.fromClient;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
@@ -8,7 +8,7 @@ import org.demoth.nogaem.common.RconCommand;
  * @author demoth
  */
 @Serializable
-public class RconMessage extends AbstractMessage{
+public class RconMessage extends AbstractMessage {
     public RconCommand command;
     public String      args;
     public String      password;

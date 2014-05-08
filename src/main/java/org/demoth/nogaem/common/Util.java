@@ -2,11 +2,12 @@ package org.demoth.nogaem.common;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.*;
-import com.jme3.network.serializing.Serializer;
+import com.jme3.network.serializing.*;
 import com.jme3.scene.plugins.blender.BlenderModelLoader;
+import org.demoth.nogaem.common.entities.Entity;
 import org.demoth.nogaem.common.messages.*;
-import org.demoth.nogaem.common.messages.client.*;
-import org.demoth.nogaem.common.messages.server.*;
+import org.demoth.nogaem.common.messages.fromClient.*;
+import org.demoth.nogaem.common.messages.fromServer.*;
 import org.slf4j.*;
 
 import java.io.File;
@@ -32,15 +33,20 @@ public class Util {
     }
 
     public static void registerMessages() {
-        Serializer.registerClass(TextMessage.class);
-        Serializer.registerClass(RconMessage.class);
-        Serializer.registerClass(RequestMessage.class);
-        Serializer.registerClass(ResponseMessage.class);
-        Serializer.registerClass(ChangeMapMessage.class);
-        Serializer.registerClass(PlayerStateChange.class);
-        Serializer.registerClass(DisconnectMessage.class);
-        Serializer.registerClass(JoinedGameMessage.class);
+        Serializer.registerClass(Acknowledgement.class);
+        Serializer.registerClass(ActionMessage.class);
         Serializer.registerClass(LoginRequestMessage.class);
-        Serializer.registerClass(NewPlayerJoinedMessage.class);
+        Serializer.registerClass(Entity.class);
+        Serializer.registerClass(RconMessage.class);
+
+        Serializer.registerClass(AddedEntities.class);
+        Serializer.registerClass(ChangeMapMessage.class);
+        Serializer.registerClass(EntityState.class);
+        Serializer.registerClass(GameStateChange.class);
+        Serializer.registerClass(RemovedEnitites.class);
+        Serializer.registerClass(JoinedGameMessage.class);
+
+        Serializer.registerClass(DisconnectMessage.class);
+        Serializer.registerClass(TextMessage.class);
     }
 }

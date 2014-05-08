@@ -1,9 +1,11 @@
-package org.demoth.nogaem.common.messages.client;
+package org.demoth.nogaem.common.messages.fromClient;
 
-import com.jme3.network.*;
+import com.jme3.network.AbstractMessage;
 
 /**
- * Created by demoth on 03.05.14.
+ * @author demoth
+ *         <p>
+ *         Client only (is not sent)
  */
 public class CommandMessage extends AbstractMessage {
     public final String cmd;

@@ -10,12 +10,13 @@ import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.messages.*;
-import org.demoth.nogaem.common.messages.client.*;
-import org.demoth.nogaem.common.messages.server.*;
+import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.messages.TextMessage;
+import org.demoth.nogaem.common.messages.fromClient.*;
+import org.demoth.nogaem.common.messages.fromServer.*;
 import org.slf4j.*;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -24,17 +25,18 @@ import static org.demoth.nogaem.common.Constants.Actions.*;
 import static org.demoth.nogaem.common.Util.trimFirstWord;
 
 public class ClientMain extends SimpleApplication {
-    private static final Logger log = LoggerFactory.getLogger(ClientMain.class);
+    private static final Logger                         log      = LoggerFactory.getLogger(ClientMain.class);
+    final                ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
+    private final        Map<Integer, Spatial>          entities = new HashMap<>();
     Client net;
     volatile long buttons;
-    ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    private int myId;
-    private Map<Integer, Spatial> players       = new HashMap<>();
-    private long                  sentButtons   = 0;
-    private Vector3f              sentDirection = new Vector3f();
+    private  int  myId;
+    private long     sentButtons   = 0;
+    private Vector3f sentDirection = new Vector3f();
 
     private SwingConsole console;
     private Thread       sender;
+    private long         lastReceivedMessage;
 
     public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
@@ -66,18 +68,14 @@ public class ClientMain extends SimpleApplication {
         super.update();
         if (!messages.isEmpty()) {
             Message message = messages.poll();
-            if (message instanceof ResponseMessage)
-                processResponse((ResponseMessage) message);
-            else if (message instanceof NewPlayerJoinedMessage)
-                addPlayer((NewPlayerJoinedMessage) message);
+            if (message instanceof GameStateChange)
+                processResponse((GameStateChange) message);
             else if (message instanceof JoinedGameMessage)
                 logIn((JoinedGameMessage) message);
             else if (message instanceof ChangeMapMessage)
                 loadMap(((ChangeMapMessage) message).mapName);
             else if (message instanceof TextMessage)
                 log.info(((TextMessage) message).text);
-            else if (message instanceof DisconnectMessage)
-                removePlayer((DisconnectMessage) message);
             else if (message instanceof CommandMessage)
                 execCommand(((CommandMessage) message).cmd);
         }
@@ -108,38 +106,54 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void removePlayer(DisconnectMessage message) {
-        int playerId = message.playerId;
-        if (playerId != myId) {
-            rootNode.detachChild(players.get(playerId));
-            players.remove(playerId);
-        }
-    }
-
-    // update
-    private void addPlayer(NewPlayerJoinedMessage message) {
-        if (message.id == myId)
+    private void addEntity(Entity entity) {
+        if (entity.id == myId) {
+            log.info("Not adding myself");
             return;
+        }
         Spatial model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-        model.scale(0.1f);
-        model.setLocalTranslation(message.location);
+        model.scale(0.05f);
+        model.setLocalTranslation(entity.state.pos);
         rootNode.attachChild(model);
-        players.put(message.id, model);
+        entities.put(entity.id, model);
+        log.info("Added entity " + entity.id);
+    }
+
+    private void removeEntity(int id) {
+        Spatial sp = entities.get(id);
+        if (sp == null)
+            return;
+        rootNode.detachChild(sp);
+        log.info("Removed entity " + id);
     }
 
     // update
-    private void processResponse(ResponseMessage message) {
-        message.changes.forEach(change -> {
-            if (change.playerId == myId) {
-                cam.setLocation(change.pos);
-            } else {
-                Spatial spatial = players.get(change.playerId);
-                if (spatial != null) {
-                    spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
-                    spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
+    private void processResponse(GameStateChange message) {
+        if (message.index < lastReceivedMessage)
+            return;
+        log.info("lastReceivedMessage=" + lastReceivedMessage + ". message.index=" + message.index);
+        lastReceivedMessage = message.index;
+        net.send(new Acknowledgement(message.index));
+        if (message.removedIds != null)
+            message.removedIds.forEach(this::removeEntity);
+        if (message.added != null)
+            message.added.forEach(this::addEntity);
+        if (message.changes != null) {
+            message.changes.forEach(change -> {
+                log.info("processing change " + change);
+                if (change.id == myId) {
+                    log.info("moving me");
+                    cam.setLocation(change.pos);
+                } else {
+                    Spatial spatial = entities.get(change.id);
+                    if (spatial != null) {
+                        log.info("moving entity: " + change.id);
+                        spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
+//                        spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     // update
@@ -304,6 +318,7 @@ public class ClientMain extends SimpleApplication {
         Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
+        net.send(new Acknowledgement(-1));
         startSendingUpdates();
     }
 
@@ -311,7 +326,7 @@ public class ClientMain extends SimpleApplication {
         // send nothing if player stays idle
         if (buttons == sentButtons && cam.getDirection().equals(sentDirection))
             return;
-        net.send(new RequestMessage(buttons, cam.getDirection()));
+        net.send(new ActionMessage(buttons, cam.getDirection()));
         sentButtons = buttons;
         sentDirection = cam.getDirection();
     }

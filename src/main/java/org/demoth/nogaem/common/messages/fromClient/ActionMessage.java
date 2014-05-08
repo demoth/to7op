@@ -1,4 +1,4 @@
-package org.demoth.nogaem.common.messages.client;
+package org.demoth.nogaem.common.messages.fromClient;
 
 import com.jme3.math.Vector3f;
 import com.jme3.network.AbstractMessage;
@@ -10,24 +10,22 @@ import com.jme3.network.serializing.Serializable;
  * @author demoth
  */
 @Serializable
-public class RequestMessage extends AbstractMessage {
-    public int playerId;
-    public long buttons;
+public class ActionMessage extends AbstractMessage {
+    public int      playerId;
+    public long     buttons;
     public Vector3f view;
 
-    public RequestMessage() {
-        setReliable(false);
+    public ActionMessage(long buttons, Vector3f direction) {
+        this.buttons = buttons;
+        this.view = direction;
     }
 
-    public RequestMessage(long buttons, Vector3f view) {
-        this();
-        this.buttons = buttons;
-        this.view = view;
+    public ActionMessage() {
     }
 
     @Override
     public String toString() {
-        return "RequestMessage{" +
+        return "ActionMessage{" +
                 "playerId=" + playerId +
                 ", buttons=" + buttons +
                 ", view=" + view +
