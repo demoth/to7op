@@ -108,7 +108,7 @@ public class ClientMain extends SimpleApplication {
     // update
     private void addEntity(Entity entity) {
         if (entity.id == myId) {
-            log.info("Not adding myself");
+//            log.info("Not adding myself");
             return;
         }
         Spatial model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
@@ -116,7 +116,7 @@ public class ClientMain extends SimpleApplication {
         model.setLocalTranslation(entity.state.pos);
         rootNode.attachChild(model);
         entities.put(entity.id, model);
-        log.info("Added entity " + entity.id);
+//        log.info("Added entity " + entity.id);
     }
 
     private void removeEntity(int id) {
@@ -131,7 +131,7 @@ public class ClientMain extends SimpleApplication {
     private void processResponse(GameStateChange message) {
         if (message.index < lastReceivedMessage)
             return;
-        log.info("lastReceivedMessage=" + lastReceivedMessage + ". message.index=" + message.index);
+//        log.info("lastReceivedMessage=" + lastReceivedMessage + ". message.index=" + message.index);
         lastReceivedMessage = message.index;
         net.send(new Acknowledgement(message.index));
         if (message.removedIds != null)
@@ -140,14 +140,14 @@ public class ClientMain extends SimpleApplication {
             message.added.forEach(this::addEntity);
         if (message.changes != null) {
             message.changes.forEach(change -> {
-                log.info("processing change " + change);
+//                log.info("processing change " + change);
                 if (change.id == myId) {
-                    log.info("moving me");
+//                    log.info("moving me");
                     cam.setLocation(change.pos);
                 } else {
                     Spatial spatial = entities.get(change.id);
                     if (spatial != null) {
-                        log.info("moving entity: " + change.id);
+//                        log.info("moving entity: " + change.id);
                         spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
 //                        spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
                     }
@@ -261,6 +261,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void resetClient() {
+        lastReceivedMessage = 0;
         stopSendingUpdates();
         rootNode.detachAllChildren();
         rootNode.getWorldLightList().clear();

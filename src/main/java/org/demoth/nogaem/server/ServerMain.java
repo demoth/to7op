@@ -76,6 +76,7 @@ public class ServerMain extends SimpleApplication {
         // todo check if mapName is valid
         log.info("Changing map to: " + mapName);
         stopSendingUpdates();
+        frameIndex = 0;
         server.broadcast(new ChangeMapMessage(mapName));
         stateManager.detach(bulletAppState);
         bulletAppState = new BulletAppState();
@@ -168,6 +169,7 @@ public class ServerMain extends SimpleApplication {
         server.addMessageListener(this::sendChatMsg, TextMessage.class);
         server.addMessageListener(this::acknowledge, Acknowledgement.class);
     }
+
     private void acknowledge(HostedConnection conn, Message message) {
         Acknowledgement ack = (Acknowledgement) message;
         Player player = players.get(conn.getId());
@@ -177,13 +179,20 @@ public class ServerMain extends SimpleApplication {
             player.isReady = true;
             return;
         }
-        //log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
-        player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
-                m.index <= ack.index).collect(Collectors.toList()));
-        //log.info("after: "+ player.notConfirmedMessages.size());
+
+        log.info("ACK=" + ack.index + ". PLR=" + player.lastReceivedMessageIndex + ". FR" + frameIndex);
+        if (ack.index == player.lastReceivedMessageIndex + 1) {
+            player.notConfirmedMessages.clear();
+        } else {
+            log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
+            player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
+                    m.index <= ack.index).collect(Collectors.toList()));
+            log.info("after: " + player.notConfirmedMessages.size());
+        }
         player.lastReceivedMessageIndex = ack.index;
 
     }
+
     private void sendChatMsg(HostedConnection conn, Message message) {
         server.broadcast(new TextMessage(entities.get(conn.getId()).name + ':' + ((TextMessage) message).text));
     }
