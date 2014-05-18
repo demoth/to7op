@@ -36,8 +36,8 @@ public class ServerMain extends SimpleApplication {
     Server         server;
     BulletAppState bulletAppState;
     Thread         sender;
-    // changes since last server frame
-    long frameIndex = 0;
+    long           frameIndex;
+    private int lastId = 10000;
 
     public static void run() {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -56,7 +56,7 @@ public class ServerMain extends SimpleApplication {
             server.addConnectionListener(new ConnectionListener() {
                 @Override
                 public void connectionAdded(Server server, HostedConnection conn) {
-                    log.info("Client connected from " + conn.getAddress());
+                    log.info("Client connecting from " + conn.getAddress());
                 }
 
                 @Override
@@ -134,13 +134,9 @@ public class ServerMain extends SimpleApplication {
     private void sendResponses() {
         changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
-        if (players.size() > 0) {
-            //log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
-            players.values().forEach(pl -> {
-                if (pl.isReady)
-                    server.broadcast(in(pl.conn), calculateChanges(pl));
-            });
-        }
+        //log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
+        players.values().stream().filter(p -> p.isReady).forEach(pl ->
+                server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
         removedIds.clear();
     }
@@ -151,6 +147,10 @@ public class ServerMain extends SimpleApplication {
         msg.index = frameIndex;
         msg.added = new HashSet<>(addedEntities);
         msg.removedIds = new HashSet<>(removedIds);
+        if (pl.notConfirmedMessages.size() > sv_drop_after) {
+            removePlayerFromGame(pl.conn);
+            pl.conn.close("Bad connection");
+        }
         pl.notConfirmedMessages.forEach(gsm -> {
             if (gsm.added != null)
                 msg.added.addAll(gsm.added);
@@ -181,20 +181,20 @@ public class ServerMain extends SimpleApplication {
         }
 
         log.info("ACK=" + ack.index + ". PLR=" + player.lastReceivedMessageIndex + ". FR" + frameIndex);
-        if (ack.index == player.lastReceivedMessageIndex + 1) {
-            player.notConfirmedMessages.clear();
-        } else {
-            log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
-            player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
-                    m.index <= ack.index).collect(Collectors.toList()));
-            log.info("after: " + player.notConfirmedMessages.size());
-        }
+//        if (ack.index == player.lastReceivedMessageIndex + 1) {
+//            player.notConfirmedMessages.clear();
+//        } else {
+        //  log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
+        player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
+                m.index <= ack.index).collect(Collectors.toList()));
+        //log.info("after: " + player.notConfirmedMessages.size());
+//        }
         player.lastReceivedMessageIndex = ack.index;
 
     }
 
     private void sendChatMsg(HostedConnection conn, Message message) {
-        server.broadcast(new TextMessage(entities.get(conn.getId()).name + ':' + ((TextMessage) message).text));
+        server.broadcast(new TextMessage(players.get(conn.getId()).name + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
@@ -206,6 +206,8 @@ public class ServerMain extends SimpleApplication {
 
     private void removePlayerFromGame(HostedConnection conn) {
         Player player = (Player) entities.get(conn.getId());
+        if (player == null)
+            return;
         log.info("disconnecting: " + player.name);
         bulletAppState.getPhysicsSpace().remove(player.physics);
         entities.remove(conn.getId());
@@ -220,6 +222,7 @@ public class ServerMain extends SimpleApplication {
         if (players.values().stream().anyMatch(p -> p.name.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
         Player player = new Player(conn, msg.login, createPlayerPhysics());
+        player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values())));
         bulletAppState.getPhysicsSpace().add(player.physics);
         entities.put(conn.getId(), player);
         players.put(conn.getId(), player);
@@ -256,9 +259,18 @@ public class ServerMain extends SimpleApplication {
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.physics.jump();
+        if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
+            createProjectile(new Vector3f(player.physics.getPhysicsLocation()));
         Vector3f left = player.state.view.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = player.state.view.multLocal(isWalking).add(left);
         player.physics.setWalkDirection(walkDirection.normalize());
+    }
+
+    private void createProjectile(Vector3f location) {
+        int id = ++lastId;
+        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, new Vector3f(0, 0, 0), location));
+        entities.put(id, axe);
+        addedEntities.add(axe);
     }
 
     private void execCommand(HostedConnection conn, Message message) {

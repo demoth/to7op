@@ -21,6 +21,7 @@ public class Player extends Entity {
     public Player(HostedConnection conn, String name, CharacterControl physics) {
         super();
         this.id = conn.getId();
+        this.state.id = conn.getId();
         this.conn = conn;
         this.name = name;
         this.physics = physics;

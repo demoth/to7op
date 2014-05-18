@@ -4,7 +4,7 @@ import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 import org.demoth.nogaem.common.entities.Entity;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  * @author demoth
@@ -15,6 +15,13 @@ public class GameStateChange extends AbstractMessage {
     public Collection<EntityState> changes;
     public Collection<Entity>      added;
     public Collection<Integer>     removedIds;
+
+    public GameStateChange() {
+    }
+
+    public GameStateChange(Collection<Entity> entities) {
+        this.added = entities;
+    }
 
     @Override
     public String toString() {

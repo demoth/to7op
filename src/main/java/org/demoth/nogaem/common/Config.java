@@ -21,6 +21,7 @@ public class Config {
     //////////////////////////////////////////////////////////////////////////
     public static int    port      = 5555;
     public static long   sv_sleep  = 50;
+    public static int    sv_drop_after = 10;
     public static String rcon_pass = "asdf";
     public static float    g_scale             = 1f;
     public static float    g_player_radius     = 1.5f;

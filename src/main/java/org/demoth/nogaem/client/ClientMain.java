@@ -97,6 +97,18 @@ public class ClientMain extends SimpleApplication {
             log.info("Connecting to " + host + ':' + port);
             net = Network.connectToServer(host, port);
             net.addMessageListener((source, m) -> messages.add(m));
+            net.addClientStateListener(new ClientStateListener() {
+                @Override
+                public void clientConnected(Client c) {
+                    log.info("Connection initialized");
+                }
+
+                @Override
+                public void clientDisconnected(Client c, DisconnectInfo info) {
+                    stopSendingUpdates();
+                    stop();
+                }
+            });
             net.start();
             log.info("Client started, sending login message...");
             net.send(new LoginRequestMessage(cl_user, cl_pass));
@@ -107,12 +119,21 @@ public class ClientMain extends SimpleApplication {
 
     // update
     private void addEntity(Entity entity) {
+        log.info("Adding " + entity);
         if (entity.id == myId) {
 //            log.info("Not adding myself");
             return;
         }
-        Spatial model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-        model.scale(0.05f);
+        Spatial model;
+        switch (entity.modelName) {
+            case "ninja":
+                model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
+                model.scale(0.05f);
+                break;
+            case "axe":
+            default:
+                model = assetManager.loadModel("axe.blend");
+        }
         model.setLocalTranslation(entity.state.pos);
         rootNode.attachChild(model);
         entities.put(entity.id, model);
@@ -129,8 +150,11 @@ public class ClientMain extends SimpleApplication {
 
     // update
     private void processResponse(GameStateChange message) {
-        if (message.index < lastReceivedMessage)
+        if (message.index < lastReceivedMessage) {
+            log.info("skipping obsolete message");
             return;
+        }
+        log.info("Processing " + message);
 //        log.info("lastReceivedMessage=" + lastReceivedMessage + ". message.index=" + message.index);
         lastReceivedMessage = message.index;
         net.send(new Acknowledgement(message.index));

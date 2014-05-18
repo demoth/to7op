@@ -15,6 +15,7 @@ import java.awt.event.*;
 public class SwingConsole extends JFrame {
     private final JTextArea  area;
     private final JTextField field;
+    SwingConsoleAppender<ILoggingEvent> appender;
 
     static {
         try {
@@ -53,7 +54,7 @@ public class SwingConsole extends JFrame {
         ple.setPattern("%logger{0} - %msg%n");
         ple.setContext(lc);
         ple.start();
-        SwingConsoleAppender<ILoggingEvent> appender = new SwingConsoleAppender<>(this);
+        appender = new SwingConsoleAppender<>(this);
         appender.setContext(lc);
         appender.start();
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -68,10 +69,18 @@ public class SwingConsole extends JFrame {
     @Override
     public void setVisible(boolean b) {
         super.setVisible(b);
-        field.requestFocusInWindow();
+        if (b)
+            field.requestFocusInWindow();
     }
 
     public static interface Action {
         void execCommand(String cmd);
+    }
+
+    @Override
+    public void dispose() {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.detachAppender(appender);
+        super.dispose();
     }
 }

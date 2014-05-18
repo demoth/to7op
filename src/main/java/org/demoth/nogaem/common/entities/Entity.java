@@ -1,5 +1,6 @@
 package org.demoth.nogaem.common.entities;
 
+import com.jme3.math.Vector3f;
 import com.jme3.network.serializing.Serializable;
 import org.demoth.nogaem.common.messages.fromServer.EntityState;
 
@@ -21,6 +22,16 @@ public class Entity {
     }
 
     public Entity() {
-        state = new EntityState();
+        state = new EntityState(id, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0));
+    }
+
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "id=" + id +
+                ", modelName='" + modelName + '\'' +
+                ", name='" + name + '\'' +
+                ", state=" + state +
+                '}';
     }
 }
