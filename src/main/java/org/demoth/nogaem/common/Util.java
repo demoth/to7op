@@ -8,6 +8,7 @@ import org.demoth.nogaem.common.entities.Entity;
 import org.demoth.nogaem.common.messages.*;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
+import org.demoth.nogaem.server.Player;
 import org.slf4j.*;
 
 import java.io.File;

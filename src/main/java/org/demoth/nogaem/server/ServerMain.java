@@ -97,7 +97,7 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
-        players.values().forEach(pl -> pl.state.pos = pl.physics.getPhysicsLocation());
+        players.values().forEach(pl -> pl.entity.state.pos = pl.physics.getPhysicsLocation());
         requests.forEach(this::processRequest);
         requests.clear();
         // updateGameState();
@@ -194,7 +194,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendChatMsg(HostedConnection conn, Message message) {
-        server.broadcast(new TextMessage(players.get(conn.getId()).name + ':' + ((TextMessage) message).text));
+        server.broadcast(new TextMessage(players.get(conn.getId()).entity.name + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
@@ -205,10 +205,10 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void removePlayerFromGame(HostedConnection conn) {
-        Player player = (Player) entities.get(conn.getId());
+        Player player = players.get(conn.getId());
         if (player == null)
             return;
-        log.info("disconnecting: " + player.name);
+        log.info("disconnecting: " + player.entity.name);
         bulletAppState.getPhysicsSpace().remove(player.physics);
         entities.remove(conn.getId());
         players.remove(conn.getId());
@@ -219,15 +219,15 @@ public class ServerMain extends SimpleApplication {
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginRequestMessage received", message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
-        if (players.values().stream().anyMatch(p -> p.name.equals(msg.login)))
+        if (players.values().stream().anyMatch(p -> p.entity.name.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
         Player player = new Player(conn, msg.login, createPlayerPhysics());
         player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values())));
         bulletAppState.getPhysicsSpace().add(player.physics);
-        entities.put(conn.getId(), player);
+        entities.put(conn.getId(), player.entity);
         players.put(conn.getId(), player);
         addedEntities.add(new Entity(conn.getId(), "ninja", msg.login, new EntityState(player)));
-        server.broadcast(in(conn), new JoinedGameMessage(player.id, map));
+        server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
     }
 
     private CharacterControl createPlayerPhysics() {
@@ -246,23 +246,23 @@ public class ServerMain extends SimpleApplication {
         if (player == null)
             return;
         log.info("Processing request for " + request.playerId);
-        player.state.view = new Vector3f(request.view.x, 0f, request.view.z);
+        player.entity.state.view = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
             isWalking = 1f;
-        if (pressed(request.buttons, Constants.Masks.WALK_BACKWARD))
+        else if (pressed(request.buttons, Constants.Masks.WALK_BACKWARD))
             isWalking = -1f;
         if (pressed(request.buttons, Constants.Masks.STRAFE_LEFT))
             isStrafing = -1f;
-        if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
+        else if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.physics.jump();
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
             createProjectile(new Vector3f(player.physics.getPhysicsLocation()));
-        Vector3f left = player.state.view.cross(up).multLocal(isStrafing);
-        Vector3f walkDirection = player.state.view.multLocal(isWalking).add(left);
+        Vector3f left = player.entity.state.view.cross(up).multLocal(isStrafing);
+        Vector3f walkDirection = player.entity.state.view.multLocal(isWalking).add(left);
         player.physics.setWalkDirection(walkDirection.normalize());
     }
 

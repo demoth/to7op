@@ -28,7 +28,7 @@ public class EntityState {
     }
 
     public EntityState(Player player) {
-        this(player.id, player.state.view, player.physics.getPhysicsLocation());
+        this(player.entity.id, player.entity.state.view, player.physics.getPhysicsLocation());
     }
 
     @Override
