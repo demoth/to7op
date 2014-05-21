@@ -47,7 +47,6 @@ public class Util {
         Serializer.registerClass(RemovedEnitites.class);
         Serializer.registerClass(JoinedGameMessage.class);
 
-        Serializer.registerClass(DisconnectMessage.class);
         Serializer.registerClass(TextMessage.class);
     }
 }
