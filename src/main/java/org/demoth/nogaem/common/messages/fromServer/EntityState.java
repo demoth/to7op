@@ -1,8 +1,7 @@
 package org.demoth.nogaem.common.messages.fromServer;
 
-import com.jme3.math.Vector3f;
+import com.jme3.math.*;
 import com.jme3.network.serializing.Serializable;
-import org.demoth.nogaem.server.Player;
 
 
 /**
@@ -12,23 +11,19 @@ import org.demoth.nogaem.server.Player;
  */
 @Serializable
 public class EntityState {
-    public int      id;
-    public Vector3f pos;
-    public Vector3f view;
+    public int        id;
+    public Vector3f   pos;
+    public Quaternion rot;
 
     public EntityState() {
         pos = new Vector3f();
-        view = new Vector3f();
+        rot = new Quaternion();
     }
 
-    public EntityState(int id, Vector3f view, Vector3f position) {
+    public EntityState(int id, Quaternion rot, Vector3f position) {
         this.id = id;
-        this.pos = position;
-        this.view = view;
-    }
-
-    public EntityState(Player player) {
-        this(player.entity.id, player.entity.state.view, player.physics.getPhysicsLocation());
+        this.rot = new Quaternion(rot);
+        this.pos = new Vector3f(position);
     }
 
     @Override
@@ -36,7 +31,7 @@ public class EntityState {
         return "EntityState{" +
                 "id=" + id +
                 ", pos=" + pos +
-                ", view=" + view +
+                ", rot=" + rot +
                 '}';
     }
 }

@@ -31,8 +31,8 @@ public class ClientMain extends SimpleApplication {
     Client net;
     volatile long buttons;
     private  int  myId;
-    private long     sentButtons   = 0;
-    private Vector3f sentDirection = new Vector3f();
+    private long       sentButtons   = 0;
+    private Quaternion sentDirection = new Quaternion();
 
     private SwingConsole console;
     private Thread       sender;
@@ -127,14 +127,17 @@ public class ClientMain extends SimpleApplication {
         Spatial model;
         switch (entity.modelName) {
             case "ninja":
-                model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-                model.scale(0.05f);
+                model = assetManager.loadModel("suzie.blend");
+//                model.scale(0.05f);
                 break;
             case "axe":
             default:
                 model = assetManager.loadModel("axe.blend");
         }
-        model.setLocalTranslation(entity.state.pos);
+        if (entity.state != null) {
+            model.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
+            model.setLocalRotation(entity.state.rot);
+        }
         rootNode.attachChild(model);
         entities.put(entity.id, model);
 //        log.info("Added entity " + entity.id);
@@ -173,7 +176,7 @@ public class ClientMain extends SimpleApplication {
                     if (spatial != null) {
 //                        log.info("moving entity: " + change.id);
                         spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
-//                        spatial.setLocalRotation(new Quaternion().fromAngles(change.view.x, change.view.y, change.view.z));
+                        spatial.setLocalRotation(change.rot);
                     }
                 }
             });
@@ -349,10 +352,10 @@ public class ClientMain extends SimpleApplication {
 
     private void sendRequests() {
         // send nothing if player stays idle
-        if (buttons == sentButtons && cam.getDirection().equals(sentDirection))
+        if (buttons == sentButtons && cam.getRotation().equals(sentDirection))
             return;
-        net.send(new ActionMessage(buttons, cam.getDirection()));
+        net.send(new ActionMessage(buttons, cam.getDirection(), cam.getRotation()));
         sentButtons = buttons;
-        sentDirection = cam.getDirection();
+        sentDirection = cam.getRotation();
     }
 }

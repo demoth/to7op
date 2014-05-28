@@ -1,6 +1,6 @@
 package org.demoth.nogaem.common.messages.fromClient;
 
-import com.jme3.math.Vector3f;
+import com.jme3.math.*;
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 
@@ -11,13 +11,15 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable
 public class ActionMessage extends AbstractMessage {
-    public int      playerId;
-    public long     buttons;
-    public Vector3f view;
+    public int        playerId;
+    public long       buttons;
+    public Vector3f   dir;
+    public Quaternion rot;
 
-    public ActionMessage(long buttons, Vector3f direction) {
+    public ActionMessage(long buttons, Vector3f direction, Quaternion rotation) {
         this.buttons = buttons;
-        this.view = direction;
+        this.dir = direction;
+        this.rot = rotation;
     }
 
     public ActionMessage() {
@@ -28,7 +30,8 @@ public class ActionMessage extends AbstractMessage {
         return "ActionMessage{" +
                 "playerId=" + playerId +
                 ", buttons=" + buttons +
-                ", view=" + view +
+                ", dir=" + dir +
+                ", rot=" + rot +
                 '}';
     }
 }

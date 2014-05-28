@@ -5,7 +5,7 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.shapes.*;
 import com.jme3.bullet.control.*;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.math.Vector3f;
+import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
@@ -226,7 +226,7 @@ public class ServerMain extends SimpleApplication {
         bulletAppState.getPhysicsSpace().add(player.physics);
         entities.put(conn.getId(), player.entity);
         players.put(conn.getId(), player);
-        addedEntities.add(new Entity(conn.getId(), "ninja", msg.login, new EntityState(player)));
+        addedEntities.add(player.entity);
         server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
     }
 
@@ -246,7 +246,7 @@ public class ServerMain extends SimpleApplication {
         if (player == null)
             return;
         log.info("Processing request for " + request.playerId);
-        player.entity.state.view = new Vector3f(request.view.x, 0f, request.view.z);
+        //player.entity.state.dir = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
@@ -260,15 +260,16 @@ public class ServerMain extends SimpleApplication {
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.physics.jump();
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
-            createProjectile(new Vector3f(player.physics.getPhysicsLocation()));
-        Vector3f left = player.entity.state.view.cross(up).multLocal(isStrafing);
-        Vector3f walkDirection = player.entity.state.view.multLocal(isWalking).add(left);
+            createProjectile(player.entity.state.rot, player.entity.state.pos);
+        Vector3f left = request.dir.cross(up).multLocal(isStrafing);
+        Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
+        player.entity.state.rot = request.rot;
         player.physics.setWalkDirection(walkDirection.normalize());
     }
 
-    private void createProjectile(Vector3f location) {
+    private void createProjectile(Quaternion rot, Vector3f pos) {
         int id = ++lastId;
-        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, new Vector3f(0, 0, 0), location));
+        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos));
         entities.put(id, axe);
         addedEntities.add(axe);
     }
