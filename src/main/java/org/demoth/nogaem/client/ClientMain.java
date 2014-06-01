@@ -31,8 +31,8 @@ public class ClientMain extends SimpleApplication {
     Client net;
     volatile long buttons;
     private  int  myId;
-    private long       sentButtons   = 0;
-    private Quaternion sentDirection = new Quaternion();
+    private long     sentButtons   = 0;
+    private Vector3f sentDirection = new Vector3f();
 
     private SwingConsole console;
     private Thread       sender;
@@ -127,8 +127,9 @@ public class ClientMain extends SimpleApplication {
         Spatial model;
         switch (entity.modelName) {
             case "ninja":
-                model = assetManager.loadModel("suzie.blend");
-//                model.scale(0.05f);
+//                model = assetManager.loadModel("suzie.blend");
+                model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
+                model.scale(0.05f);
                 break;
             case "axe":
             default:
@@ -352,10 +353,10 @@ public class ClientMain extends SimpleApplication {
 
     private void sendRequests() {
         // send nothing if player stays idle
-        if (buttons == sentButtons && cam.getRotation().equals(sentDirection))
+        if (buttons == sentButtons && cam.getDirection().equals(sentDirection))
             return;
         net.send(new ActionMessage(buttons, cam.getDirection(), cam.getRotation()));
         sentButtons = buttons;
-        sentDirection = cam.getRotation();
+        sentDirection = cam.getDirection();
     }
 }
