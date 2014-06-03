@@ -121,13 +121,11 @@ public class ClientMain extends SimpleApplication {
     private void addEntity(Entity entity) {
         log.info("Adding " + entity);
         if (entity.id == myId) {
-//            log.info("Not adding myself");
             return;
         }
         Spatial model;
         switch (entity.modelName) {
             case "ninja":
-//                model = assetManager.loadModel("suzie.blend");
                 model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
                 model.scale(0.05f);
                 break;
@@ -141,7 +139,6 @@ public class ClientMain extends SimpleApplication {
         }
         rootNode.attachChild(model);
         entities.put(entity.id, model);
-//        log.info("Added entity " + entity.id);
     }
 
     private void removeEntity(int id) {
@@ -158,8 +155,6 @@ public class ClientMain extends SimpleApplication {
             log.info("skipping obsolete message");
             return;
         }
-        log.info("Processing " + message);
-//        log.info("lastReceivedMessage=" + lastReceivedMessage + ". message.index=" + message.index);
         lastReceivedMessage = message.index;
         net.send(new Acknowledgement(message.index));
         if (message.removedIds != null)
@@ -168,14 +163,11 @@ public class ClientMain extends SimpleApplication {
             message.added.forEach(this::addEntity);
         if (message.changes != null) {
             message.changes.forEach(change -> {
-//                log.info("processing change " + change);
                 if (change.id == myId) {
-//                    log.info("moving me");
                     cam.setLocation(change.pos);
                 } else {
                     Spatial spatial = entities.get(change.id);
                     if (spatial != null) {
-//                        log.info("moving entity: " + change.id);
                         spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
                         spatial.setLocalRotation(change.rot);
                     }

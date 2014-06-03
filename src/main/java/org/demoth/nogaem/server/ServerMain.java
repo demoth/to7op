@@ -180,15 +180,8 @@ public class ServerMain extends SimpleApplication {
             return;
         }
 
-        log.info("ACK=" + ack.index + ". PLR=" + player.lastReceivedMessageIndex + ". FR" + frameIndex);
-//        if (ack.index == player.lastReceivedMessageIndex + 1) {
-//            player.notConfirmedMessages.clear();
-//        } else {
-        //  log.info("confirming player" + player.id + " messages up to " + ack.index + " before: " + player.notConfirmedMessages.size());
         player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
                 m.index <= ack.index).collect(Collectors.toList()));
-        //log.info("after: " + player.notConfirmedMessages.size());
-//        }
         player.lastReceivedMessageIndex = ack.index;
 
     }
@@ -245,8 +238,6 @@ public class ServerMain extends SimpleApplication {
         Player player = players.get(request.playerId);
         if (player == null)
             return;
-        log.info("Processing request for " + request.playerId);
-        //player.entity.state.dir = new Vector3f(request.view.x, 0f, request.view.z);
         float isWalking = 0f;
         float isStrafing = 0f;
         if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
