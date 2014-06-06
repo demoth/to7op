@@ -180,7 +180,8 @@ public class ClientMain extends SimpleApplication {
     private void logIn(JoinedGameMessage message) {
         myId = message.id;
         log.info("logged in successfuly: ");
-        loadMap(message.map);
+        if (!message.map.isEmpty())
+            loadMap(message.map);
     }
 
     private void startSendingUpdates() {
@@ -260,6 +261,7 @@ public class ClientMain extends SimpleApplication {
                         args = "";
                     RconMessage message = new RconMessage(RconCommand.valueOf(words[1]), args, rcon_pass);
                     log.info("Sending rcon message: " + message);
+                    stopSendingUpdates();
                     net.send(message);
                     break;
                 case set:
@@ -275,9 +277,9 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void disconnect() {
-        resetClient();
         if (net != null && net.isConnected())
             net.close();
+        resetClient();
     }
 
     private void resetClient() {
