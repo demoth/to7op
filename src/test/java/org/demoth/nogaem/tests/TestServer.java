@@ -2,7 +2,7 @@ package org.demoth.nogaem.tests;
 
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.server.ServerMain;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -21,6 +21,7 @@ public class TestServer {
         prepareTest(HeadlessClient::tryToConnect);
     }
 
+    @Ignore
     @Test
     public void testUpdates() throws IOException, InterruptedException {
         prepareTest(HeadlessClient::tryToConnectAndReceiveUpdates);

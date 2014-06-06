@@ -46,7 +46,7 @@ public class ClientMain extends SimpleApplication {
     public void simpleInitApp() {
         log.info("Starting console...");
         try {
-            console = new SwingConsole(s -> messages.add(new CommandMessage(s)));
+//            console = new SwingConsole(s -> messages.add(new CommandMessage(s)));
         } catch (Exception e) {
             log.error("Could not create console! " + e.getMessage());
         }
@@ -179,7 +179,7 @@ public class ClientMain extends SimpleApplication {
     // update
     private void logIn(JoinedGameMessage message) {
         myId = message.id;
-        log.info("logged in successfuly: ");
+        log.info("logged in successfuly: id=" + message.id);
         if (!message.map.isEmpty())
             loadMap(message.map);
     }

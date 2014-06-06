@@ -135,7 +135,7 @@ public class ServerMain extends SimpleApplication {
     private void sendResponses() {
         changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
-        //log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
+//        log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
@@ -202,7 +202,7 @@ public class ServerMain extends SimpleApplication {
         Player player = players.get(conn.getId());
         if (player == null)
             return;
-        log.info("disconnecting: " + player.entity.name);
+        log.info("disconnecting: " + player.entity.name + " id: " + conn.getId());
         bulletAppState.getPhysicsSpace().remove(player.physics);
         entities.remove(conn.getId());
         players.remove(conn.getId());
@@ -211,10 +211,12 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void addPlayer(HostedConnection conn, Message message) {
-        log.info("LoginRequestMessage received", message);
+        log.info("LoginRequestMessage received: " + message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
-        if (players.values().stream().anyMatch(p -> p.entity.name.equals(msg.login)))
+        if (players.values().stream().anyMatch(p -> p.entity.name.equals(msg.login))) {
             conn.close("Player with login " + msg.login + " is already in game");
+            return;
+        }
         Player player = new Player(conn, msg.login, createPlayerPhysics());
         server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
 
