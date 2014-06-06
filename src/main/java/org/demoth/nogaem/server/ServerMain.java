@@ -64,8 +64,7 @@ public class ServerMain extends SimpleApplication {
                     removePlayerFromGame(conn);
                 }
             });
-            if (!map.isEmpty())
-                changeMap(map);
+            changeMap(map);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -79,6 +78,8 @@ public class ServerMain extends SimpleApplication {
         frameIndex = 0;
         server.broadcast(new ChangeMapMessage(mapName));
         stateManager.detach(bulletAppState);
+        if (mapName.isEmpty())
+            return;
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         Spatial sceneModel = assetManager.loadModel(mapName);
@@ -215,12 +216,16 @@ public class ServerMain extends SimpleApplication {
         if (players.values().stream().anyMatch(p -> p.entity.name.equals(msg.login)))
             conn.close("Player with login " + msg.login + " is already in game");
         Player player = new Player(conn, msg.login, createPlayerPhysics());
+        server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
+
+        if (map.isEmpty())
+            return;
+
         player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values())));
         bulletAppState.getPhysicsSpace().add(player.physics);
         entities.put(conn.getId(), player.entity);
         players.put(conn.getId(), player);
         addedEntities.add(player.entity);
-        server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
     }
 
     private CharacterControl createPlayerPhysics() {
