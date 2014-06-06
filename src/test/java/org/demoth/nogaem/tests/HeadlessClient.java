@@ -26,9 +26,13 @@ public class HeadlessClient extends SimpleApplication{
         Util.registerMessages();
     }
 
-    public void tryToConnect() throws IOException {
+    public void tryToConnect() {
         System.out.println("Connecting to " + host + ':' + port);
-        net = Network.connectToServer(host, port);
+        try {
+            net = Network.connectToServer(host, port);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         net.start();
         System.out.println("Connected, adding message listener");
         net.addMessageListener(this::receiveJoinedMessageAndShutdown);
@@ -36,6 +40,10 @@ public class HeadlessClient extends SimpleApplication{
         System.out.println("Sending login request");
         net.send(new LoginRequestMessage("demoth", "empty"));
         // here we are waiting JoinedMessage to come
+    }
+
+    public void tryToConnectAndReceiveUpdates() {
+
     }
 
     public void receiveJoinedMessageAndShutdown(Client client, Message message) {
