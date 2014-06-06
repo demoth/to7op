@@ -15,29 +15,30 @@ public class Config {
     /////////////////       CONFIG VARIABLES END         /////////////////////
     //////////////////////////////////////////////////////////////////////////
     public static final Map<String, CVar> cvars;
-    private static final Logger log = LoggerFactory.getLogger(Config.class);
+    private static final Logger   log                 = LoggerFactory.getLogger(Config.class);
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES START      //////////////////////
     //////////////////////////////////////////////////////////////////////////
-    public static int    port      = 5555;
-    public static long   sv_sleep  = 100;
-    public static int    sv_drop_after = 50;
-    public static String rcon_pass = "asdf";
-    public static float    g_scale             = 1f;
-    public static float    g_player_radius     = 1.5f;
-    public static float    g_player_height     = 6f;
-    public static int      g_player_axis       = 1;
-    public static float    g_player_step       = 0.05f;
-    public static float    g_player_jumpheight = 15;
-    public static float    g_player_fallspeed  = 60;
-    public static float    g_player_gravity    = 30;
-    public static Vector3f g_spawn_point       = new Vector3f(0f, 10f, 0f);
-    public static String   map                 = "box.blend";
-    public static String host     = "127.0.0.1";
-    public static String cl_user  = "demoth";
-    public static String cl_pass  = "cadaver";
-    public static long   cl_sleep = 100;
-    public static float r_ambient = 1.3f;
+    public static        int      port                = 5555;
+    public static        long     sv_sleep            = 100;
+    public static        int      sv_drop_after       = 50;
+    public static        String   rcon_pass           = "asdf";
+    public static        float    g_scale             = 1f;
+    public static        float    g_player_radius     = 1.5f;
+    public static        float    g_player_height     = 6f;
+    public static        int      g_player_axis       = 1;
+    public static        float    g_player_step       = 0.05f;
+    public static        float    g_player_jumpheight = 15;
+    public static        float    g_player_fallspeed  = 60;
+    public static        float    g_player_gravity    = 30;
+    public static        Vector3f g_spawn_point       = new Vector3f(0f, 10f, 0f);
+    public static        String   map                 = "box.blend";
+    public static        String   host                = "127.0.0.1";
+    public static        String   cl_user             = "demoth";
+    public static        String   cl_pass             = "cadaver";
+    public static        long     cl_sleep            = 100;
+    public static        float    cl_lerp             = sv_sleep / 1000f;
+    public static        float    r_ambient           = 1.3f;
 
     private static void load(String fileName) {
         try {

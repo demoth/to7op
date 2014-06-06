@@ -1,6 +1,7 @@
 package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AbstractAppState;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
@@ -33,6 +34,11 @@ public class ClientMain extends SimpleApplication {
     private  int  myId;
     private long     sentButtons   = 0;
     private Vector3f sentDirection = new Vector3f();
+    // interpolation
+    private float current;
+    private Vector3f startPosition = new Vector3f();
+    private Vector3f endPosition   = new Vector3f();
+
 
     private SwingConsole console;
     private Thread       sender;
@@ -58,6 +64,18 @@ public class ClientMain extends SimpleApplication {
         // todo move to state
         configureInputs();
         flyCam.setMoveSpeed(0);
+        stateManager.attach(new AbstractAppState() {
+            @Override
+            public void update(float tpf) {
+                if (current >= 0) {
+                    float scale = current / cl_lerp;
+                    cam.setLocation(FastMath.interpolateLinear(scale, startPosition, endPosition));
+                    current += tpf;
+                    if (current > cl_lerp && current != 0f)
+                        current = -1f;
+                }
+            }
+        });
         if (!host.isEmpty())
             connect();
     }
@@ -165,7 +183,9 @@ public class ClientMain extends SimpleApplication {
         if (message.changes != null) {
             message.changes.forEach(change -> {
                 if (change.id == myId) {
-                    cam.setLocation(change.pos);
+                    startPosition = new Vector3f(cam.getLocation());
+                    endPosition = change.pos;
+                    current = 0f;
                 } else {
                     Spatial spatial = entities.get(change.id);
                     if (spatial != null) {
