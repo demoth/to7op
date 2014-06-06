@@ -20,8 +20,8 @@ public class Config {
     /////////////////       CONFIG VARIABLES START      //////////////////////
     //////////////////////////////////////////////////////////////////////////
     public static int    port      = 5555;
-    public static long   sv_sleep  = 500;
-    public static int    sv_drop_after = 10;
+    public static long   sv_sleep  = 100;
+    public static int    sv_drop_after = 50;
     public static String rcon_pass = "asdf";
     public static float    g_scale             = 1f;
     public static float    g_player_radius     = 1.5f;
@@ -36,7 +36,7 @@ public class Config {
     public static String host     = "127.0.0.1";
     public static String cl_user  = "demoth";
     public static String cl_pass  = "cadaver";
-    public static long   cl_sleep = 500;
+    public static long   cl_sleep = 100;
     public static float r_ambient = 1.3f;
 
     private static void load(String fileName) {

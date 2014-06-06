@@ -135,7 +135,7 @@ public class ServerMain extends SimpleApplication {
     private void sendResponses() {
         changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
-//        log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
+        log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
@@ -160,6 +160,7 @@ public class ServerMain extends SimpleApplication {
         });
         pl.notConfirmedMessages.add(msg);
         msg.changes = changes;
+        log.info("Changes for " + pl.entity.name + " A=" + msg.added.size() + " R=" + msg.removedIds.size() + " C=" + msg.changes.size());
         return msg;
     }
 
@@ -178,9 +179,10 @@ public class ServerMain extends SimpleApplication {
             return;
         if (ack.index == -1) {
             player.isReady = true;
+            log.info("Player " + conn.getId() + " is ready");
             return;
         }
-
+        log.info("Acknowledging for " + conn.getId() + " index: " + ack.index);
         player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
                 m.index <= ack.index).collect(Collectors.toList()));
         player.lastReceivedMessageIndex = ack.index;

@@ -68,6 +68,7 @@ public class ClientMain extends SimpleApplication {
         super.update();
         if (!messages.isEmpty()) {
             Message message = messages.poll();
+            log.info("Received: " + message);
             if (message instanceof GameStateChange)
                 processResponse((GameStateChange) message);
             else if (message instanceof JoinedGameMessage)
