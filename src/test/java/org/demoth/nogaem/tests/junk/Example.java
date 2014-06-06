@@ -1,4 +1,4 @@
-package org.demoth.nogaem.tests;
+package org.demoth.nogaem.tests.junk;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.*;
@@ -12,10 +12,6 @@ import com.jme3.light.*;
 import com.jme3.math.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Example 9 - How to make walls and floors solid.
@@ -23,7 +19,6 @@ import org.junit.runners.JUnit4;
  *
  * @author normen, with edits by Zathras
  */
-@RunWith(JUnit4.class)
 public class Example extends SimpleApplication
         implements ActionListener {
 
@@ -42,13 +37,6 @@ public class Example extends SimpleApplication
         settings.setWidth(1000);
         settings.setHeight(700);
         setSettings(settings);
-    }
-
-    @Test
-    @Ignore
-    public void run() {
-        Example app = new Example();
-        app.start();
     }
 
     public void simpleInitApp() {
@@ -181,6 +169,6 @@ public class Example extends SimpleApplication
     }
 
     public static void main(String... args) {
-        new Example().run();
+        new Example().start();
     }
 }

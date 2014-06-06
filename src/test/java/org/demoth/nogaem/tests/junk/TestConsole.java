@@ -1,4 +1,4 @@
-package org.demoth.nogaem.tests;
+package org.demoth.nogaem.tests.junk;
 
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.junit.Ignore;
@@ -11,11 +11,8 @@ import javax.swing.*;
 /**
  * @author demoth
  */
-@RunWith(JUnit4.class)
 public class TestConsole {
 
-    @Ignore
-    @Test
     public void test() {
         SwingConsole console = new SwingConsole(System.out::println);
         console.setVisible(true);

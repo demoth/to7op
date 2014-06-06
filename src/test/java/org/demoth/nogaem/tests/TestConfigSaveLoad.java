@@ -1,13 +1,12 @@
 package org.demoth.nogaem.tests;
 
 import org.demoth.nogaem.common.Config;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.file.*;
 
 /**
  * @author demoth
@@ -28,8 +27,13 @@ public class TestConfigSaveLoad {
     }
 
     @Test
-    public void saveConfig(){
+    public void saveConfig() {
         Config.save(fileName);
         assert Files.exists(Paths.get(fileName));
+    }
+
+    @After
+    public void cleanup() {
+        assert new File(fileName).delete();
     }
 }

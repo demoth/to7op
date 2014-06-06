@@ -1,23 +1,18 @@
-package org.demoth.nogaem.tests;
+package org.demoth.nogaem.tests.junk;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.util.StatusPrinter;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.client.swing.SwingConsoleAppender;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author demoth
  */
-@RunWith(JUnit4.class)
 public class TestAppender {
 
-    @Test
     public void test() {
         Logger logger = LoggerFactory.getLogger(TestAppender.class);
         logger.info("logging without swing console");

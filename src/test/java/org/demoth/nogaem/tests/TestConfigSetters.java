@@ -1,13 +1,14 @@
 package org.demoth.nogaem.tests;
 
 import com.jme3.math.Vector3f;
-import org.junit.Before;
-import org.junit.Test;
+import org.demoth.nogaem.common.Config;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -21,19 +22,27 @@ public class TestConfigSetters {
 
     private Logger log;
     private Random random;
+    static String backup = "backup.cfg";
 
     @Before
     public void setUp() {
+        Config.save(backup);
         log = LoggerFactory.getLogger("TestConfigSetters");
         random = new Random();
         log.info("Config cvars size: " + cvars.size());
+    }
+
+    @After
+    public void restore() {
+        Config.loadOrSave(backup);
+        assert new File(backup).delete();
     }
 
     @Test
     public void testIntegers() {
         log.info("---INTEGER & LONG TEST---");
 
-        String intLongVars[] = {"sv_port", "sv_sleep", "cl_sleep", "g_player_axis"};
+        String intLongVars[] = {"port", "sv_sleep", "cl_sleep", "g_player_axis"};
         Arrays.stream(intLongVars).forEach(var -> {
             assert cvars.containsKey(var);
             log.info("Old value: " + cvars.get(var).get());
@@ -48,7 +57,7 @@ public class TestConfigSetters {
     public void testFloat() {
         log.info("--- FLOAT TEST---");
         float eps = 0.000_001f;
-        String floatVars[] = {"g_scale", "g_mass", "g_player_radius", "g_player_height"};
+        String floatVars[] = {"g_scale", "g_player_radius", "g_player_height"};
         Arrays.stream(floatVars).forEach(var -> {
             assert cvars.containsKey(var);
             log.info("Old value: " + cvars.get(var).get());
