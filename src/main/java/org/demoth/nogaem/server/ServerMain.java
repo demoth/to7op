@@ -110,7 +110,7 @@ public class ServerMain extends SimpleApplication {
             if (e.modelName.equals("axe")) {
                 if (random.nextFloat() < 0.02f) {
                     e.state.pos = e.state.pos.add(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat())).mult(random.nextFloat());
-                    log.info("New position: " + e.state.pos);
+                    log.trace("New position: " + e.state.pos);
                 }
                 if (random.nextFloat() < 0.02f) {
                     e.state.rot = new Quaternion(random.nextFloat(), random.nextFloat(), random.nextFloat(), random.nextFloat());
@@ -130,13 +130,16 @@ public class ServerMain extends SimpleApplication {
         log.info("starting sending updates");
         sender = new Thread(() -> {
             while (true) {
+                long started = System.currentTimeMillis();
                 sendResponses();
-                try {
-                    Thread.sleep(sv_sleep);
-                } catch (InterruptedException e) {
-                    log.info("stopped sending updates");
-                    break;
-                }
+                long toSleep = sv_sleep + started - System.currentTimeMillis();
+                if (toSleep > 0)
+                    try {
+                        Thread.sleep(toSleep);
+                    } catch (InterruptedException e) {
+                        log.info("stopped sending updates");
+                        break;
+                    }
             }
         });
         sender.start();
@@ -150,7 +153,7 @@ public class ServerMain extends SimpleApplication {
     private void sendResponses() {
         changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
-        log.trace("Sending respose to {0}. A={1}, R={2}, C={3}",players.size(), addedEntities.size(), removedIds.size(), changes.size());
+        log.trace("Sending respose to {0}. A={1}, R={2}, C={3}", players.size(), addedEntities.size(), removedIds.size(), changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();

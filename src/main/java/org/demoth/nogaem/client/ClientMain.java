@@ -214,13 +214,16 @@ public class ClientMain extends SimpleApplication {
         log.info("starting sending updates");
         sender = new Thread(() -> {
             while (true) {
+                long started = System.currentTimeMillis();
                 sendRequests();
-                try {
-                    Thread.sleep(cl_sleep);
-                } catch (InterruptedException e) {
-                    log.info("stopped sending updates");
-                    break;
-                }
+                long toSleep = cl_sleep + started - System.currentTimeMillis();
+                if (toSleep > 0)
+                    try {
+                        Thread.sleep(toSleep);
+                    } catch (InterruptedException e) {
+                        log.info("stopped sending updates");
+                        break;
+                    }
             }
         });
         sender.start();
