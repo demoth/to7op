@@ -33,6 +33,7 @@ public class ServerMain extends SimpleApplication {
     final Collection<Entity>   addedEntities = new ConcurrentLinkedQueue<>();
     final Collection<Integer>  removedIds    = new ConcurrentLinkedQueue<>();
     Collection<EntityState> changes = new ConcurrentLinkedQueue<>();
+    Random                  random  = new Random();
     Server         server;
     BulletAppState bulletAppState;
     Thread         sender;
@@ -101,7 +102,21 @@ public class ServerMain extends SimpleApplication {
         players.values().forEach(pl -> pl.entity.state.pos = pl.physics.getPhysicsLocation());
         requests.forEach(this::processRequest);
         requests.clear();
-        // updateGameState();
+        updateGameState();
+    }
+
+    private void updateGameState() {
+        for (Entity e : entities.values()) {
+            if (e.modelName.equals("axe")) {
+                if (random.nextFloat() < 0.02f) {
+                    e.state.pos = e.state.pos.add(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat())).mult(random.nextFloat());
+                    log.info("New position: " + e.state.pos);
+                }
+                if (random.nextFloat() < 0.02f) {
+                    e.state.rot = new Quaternion(random.nextFloat(), random.nextFloat(), random.nextFloat(), random.nextFloat());
+                }
+            }
+        }
     }
 
     @Override
@@ -135,7 +150,7 @@ public class ServerMain extends SimpleApplication {
     private void sendResponses() {
         changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
-        log.info("Sending respose to " + players.size() + ". A=" + addedEntities.size() + " R=" + removedIds.size() + " C=" + changes.size());
+        log.trace("Sending respose to {0}. A={1}, R={2}, C={3}",players.size(), addedEntities.size(), removedIds.size(), changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
@@ -160,7 +175,7 @@ public class ServerMain extends SimpleApplication {
         });
         pl.notConfirmedMessages.add(msg);
         msg.changes = changes;
-        log.info("Changes for " + pl.entity.name + " A=" + msg.added.size() + " R=" + msg.removedIds.size() + " C=" + msg.changes.size());
+        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
         return msg;
     }
 
@@ -182,7 +197,7 @@ public class ServerMain extends SimpleApplication {
             log.info("Player " + conn.getId() + " is ready");
             return;
         }
-        log.info("Acknowledging for " + conn.getId() + " index: " + ack.index);
+        log.trace("Acknowledging for {0} index: {1}", conn.getId(), ack.index);
         player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
                 m.index <= ack.index).collect(Collectors.toList()));
         player.lastReceivedMessageIndex = ack.index;

@@ -9,6 +9,7 @@ import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
+import org.demoth.nogaem.client.controls.EntityContol;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.Entity;
@@ -28,14 +29,14 @@ import static org.demoth.nogaem.common.Util.trimFirstWord;
 public class ClientMain extends SimpleApplication {
     private static final Logger                         log      = LoggerFactory.getLogger(ClientMain.class);
     final                ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final        Map<Integer, Spatial>          entities = new HashMap<>();
+    private final        Map<Integer, EntityContol>     entities = new HashMap<>();
     Client net;
     volatile long buttons;
     private  int  myId;
     private long     sentButtons   = 0;
     private Vector3f sentDirection = new Vector3f();
     // interpolation
-    private float current;
+    private float camLerp;
     private Vector3f startPosition = new Vector3f();
     private Vector3f endPosition   = new Vector3f();
 
@@ -67,12 +68,12 @@ public class ClientMain extends SimpleApplication {
         stateManager.attach(new AbstractAppState() {
             @Override
             public void update(float tpf) {
-                if (current >= 0) {
-                    float scale = current / cl_lerp;
+                if (camLerp >= 0) {
+                    float scale = camLerp / cl_lerp;
                     cam.setLocation(FastMath.interpolateLinear(scale, startPosition, endPosition));
-                    current += tpf;
-                    if (current > cl_lerp && current != 0f)
-                        current = -1f;
+                    camLerp += tpf;
+                    if (camLerp > cl_lerp && camLerp != 0f)
+                        camLerp = -1f;
                 }
             }
         });
@@ -86,7 +87,7 @@ public class ClientMain extends SimpleApplication {
         super.update();
         if (!messages.isEmpty()) {
             Message message = messages.poll();
-            log.info("Received: " + message);
+            log.trace("Received: {0}", message);
             if (message instanceof GameStateChange)
                 processResponse((GameStateChange) message);
             else if (message instanceof JoinedGameMessage)
@@ -139,9 +140,8 @@ public class ClientMain extends SimpleApplication {
     // update
     private void addEntity(Entity entity) {
         log.info("Adding " + entity);
-        if (entity.id == myId) {
+        if (entity.id == myId)
             return;
-        }
         Spatial model;
         switch (entity.modelName) {
             case "ninja":
@@ -156,15 +156,16 @@ public class ClientMain extends SimpleApplication {
             model.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
             model.setLocalRotation(entity.state.rot);
         }
+        entities.put(entity.id, new EntityContol(model));
         rootNode.attachChild(model);
-        entities.put(entity.id, model);
     }
 
     private void removeEntity(int id) {
-        Spatial sp = entities.get(id);
+        Spatial sp = entities.get(id).getSpatial();
         if (sp == null)
             return;
         rootNode.detachChild(sp);
+        entities.remove(id);
         log.info("Removed entity " + id);
     }
 
@@ -185,12 +186,16 @@ public class ClientMain extends SimpleApplication {
                 if (change.id == myId) {
                     startPosition = new Vector3f(cam.getLocation());
                     endPosition = change.pos;
-                    current = 0f;
+                    camLerp = 0f;
                 } else {
-                    Spatial spatial = entities.get(change.id);
-                    if (spatial != null) {
-                        spatial.setLocalTranslation(change.pos.x, change.pos.y, change.pos.z);
-                        spatial.setLocalRotation(change.rot);
+                    EntityContol contol = entities.get(change.id);
+                    if (contol != null) {
+                        if (change.rot != null && !change.rot.equals(contol.endRotation)) {
+                            contol.rotateLerp(change.rot);
+                        }
+                        if (change.pos != null && !change.pos.equals(contol.endPosition)) {
+                            contol.moveLerp(change.pos);
+                        }
                     }
                 }
             });
