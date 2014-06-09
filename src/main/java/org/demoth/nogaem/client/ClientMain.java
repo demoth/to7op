@@ -5,9 +5,12 @@ import com.jme3.app.state.AbstractAppState;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
+import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.scene.Spatial;
+import com.jme3.scene.*;
+import com.jme3.scene.debug.Arrow;
+import com.jme3.scene.shape.*;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.client.controls.EntityContol;
 import org.demoth.nogaem.client.swing.SwingConsole;
@@ -142,6 +145,7 @@ public class ClientMain extends SimpleApplication {
         log.info("Adding " + entity);
         if (entity.id == myId)
             return;
+        Node node = new Node(entity.name);
         Spatial model;
         switch (entity.modelName) {
             case "ninja":
@@ -152,12 +156,24 @@ public class ClientMain extends SimpleApplication {
             default:
                 model = assetManager.loadModel("axe.blend");
         }
+        Geometry bounds = new Geometry(entity.name + "BB", new Box(entity.size, entity.size, entity.size));
+        bounds.setMaterial(createBoundBoxMaterial());
+        node.attachChild(model);
+        node.attachChild(bounds);
+
         if (entity.state != null) {
-            model.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
-            model.setLocalRotation(entity.state.rot);
+            node.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
+            node.setLocalRotation(entity.state.rot);
         }
-        entities.put(entity.id, new EntityContol(model));
-        rootNode.attachChild(model);
+        entities.put(entity.id, new EntityContol(node));
+        rootNode.attachChild(node);
+    }
+
+    private Material createBoundBoxMaterial() {
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.getAdditionalRenderState().setWireframe(true);
+        mat.setColor("Color", ColorRGBA.Blue);
+        return mat;
     }
 
     private void removeEntity(int id) {
@@ -371,6 +387,7 @@ public class ClientMain extends SimpleApplication {
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));
+        attachCoordinateAxes(new Vector3f());
         startSendingUpdates();
     }
 
@@ -382,4 +399,29 @@ public class ClientMain extends SimpleApplication {
         sentButtons = buttons;
         sentDirection = cam.getDirection();
     }
+
+    private void attachCoordinateAxes(Vector3f pos){
+        Arrow arrow = new Arrow(Vector3f.UNIT_X);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Red).setLocalTranslation(pos);
+
+        arrow = new Arrow(Vector3f.UNIT_Y);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Green).setLocalTranslation(pos);
+
+        arrow = new Arrow(Vector3f.UNIT_Z);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Blue).setLocalTranslation(pos);
+    }
+
+    private Geometry putShape(Mesh shape, ColorRGBA color){
+        Geometry g = new Geometry("coordinate axis", shape);
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.getAdditionalRenderState().setWireframe(true);
+        mat.setColor("Color", color);
+        g.setMaterial(mat);
+        rootNode.attachChild(g);
+        return g;
+    }
+
 }

@@ -26,6 +26,7 @@ public class Player {
         entity.id = conn.getId();
         entity.state.id = conn.getId();
         entity.name = name;
+        entity.size = 3f;
         this.conn = conn;
         this.physics = physics;
     }

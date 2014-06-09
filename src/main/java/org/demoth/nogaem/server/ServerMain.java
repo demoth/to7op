@@ -106,17 +106,15 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void updateGameState() {
-        for (Entity e : entities.values()) {
-            if (e.modelName.equals("axe")) {
-                if (random.nextFloat() < 0.02f) {
-                    e.state.pos = e.state.pos.add(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat())).mult(random.nextFloat());
-                    log.trace("New position: " + e.state.pos);
-                }
-                if (random.nextFloat() < 0.02f) {
-                    e.state.rot = new Quaternion(random.nextFloat(), random.nextFloat(), random.nextFloat(), random.nextFloat());
-                }
+        entities.values().stream().filter(e -> e.modelName.equals("axe")).forEach(e -> {
+            if (random.nextFloat() < 0.02f) {
+                e.state.pos = e.state.pos.add(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat())).mult(random.nextFloat());
+                log.trace("New position: " + e.state.pos);
             }
-        }
+            if (random.nextFloat() < 0.02f) {
+                e.state.rot = new Quaternion(random.nextFloat(), random.nextFloat(), random.nextFloat(), random.nextFloat());
+            }
+        });
     }
 
     @Override
@@ -287,7 +285,7 @@ public class ServerMain extends SimpleApplication {
 
     private void createProjectile(Quaternion rot, Vector3f pos) {
         int id = ++lastId;
-        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos));
+        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos), 1f);
         entities.put(id, axe);
         addedEntities.add(axe);
     }

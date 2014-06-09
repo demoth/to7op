@@ -12,13 +12,15 @@ public class Entity {
     public int         id;
     public String      modelName;
     public String      name;
+    public float       size = 1f;
     public EntityState state;
 
-    public Entity(int id, String modelName, String name, EntityState state) {
+    public Entity(int id, String modelName, String name, EntityState state, float size) {
         this.id = id;
         this.modelName = modelName;
         this.name = name;
         this.state = state;
+        this.size = size;
     }
 
     public Entity() {
