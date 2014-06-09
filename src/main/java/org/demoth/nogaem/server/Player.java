@@ -20,13 +20,13 @@ public class Player {
     public boolean isReady = false;
     public Entity entity;
 
-    public Player(HostedConnection conn, String name, CharacterControl physics) {
+    public Player(HostedConnection conn, String name, CharacterControl physics, float size) {
         entity = new Entity();
         entity.modelName = "ninja";
         entity.id = conn.getId();
         entity.state.id = conn.getId();
         entity.name = name;
-        entity.size = 3f;
+        entity.size = size;
         this.conn = conn;
         this.physics = physics;
     }

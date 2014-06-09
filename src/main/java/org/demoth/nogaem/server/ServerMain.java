@@ -235,7 +235,7 @@ public class ServerMain extends SimpleApplication {
             conn.close("Player with login " + msg.login + " is already in game");
             return;
         }
-        Player player = new Player(conn, msg.login, createPlayerPhysics());
+        Player player = new Player(conn, msg.login, createPlayerPhysics(), g_player_height);
         server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
 
         if (map.isEmpty())
@@ -277,6 +277,7 @@ public class ServerMain extends SimpleApplication {
             player.physics.jump();
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
             createProjectile(player.entity.state.rot, player.entity.state.pos);
+        request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
         Vector3f left = request.dir.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
         player.entity.state.rot = request.rot;
