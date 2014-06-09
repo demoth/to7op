@@ -4,13 +4,17 @@ import com.jme3.math.*;
 import com.jme3.renderer.*;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
+import org.demoth.nogaem.common.Constants;
+import org.demoth.nogaem.common.entities.Entity;
 
 import static org.demoth.nogaem.common.Config.cl_lerp;
 
 /**
  * @author demoth
  */
-public class EntityContol extends AbstractControl {
+public class ClientEntity extends AbstractControl {
+    public Entity entity;
+    public Spatial visible;
     public float      posLerp;
     public float      rotLerp;
     public Vector3f   startPosition;
@@ -19,15 +23,17 @@ public class EntityContol extends AbstractControl {
     public Quaternion endRotation;
     public Quaternion currentRotation;
 
-    public EntityContol(Spatial model) {
+    public ClientEntity(Entity entity, Spatial node, Spatial visible) {
         super();
-        endPosition = new Vector3f(model.getLocalTranslation());
-        endRotation = new Quaternion(model.getLocalRotation());
-        currentRotation = new Quaternion(model.getLocalRotation());
+        this.entity = entity;
+        this.visible = visible;
+        endPosition = new Vector3f(node.getLocalTranslation());
+        endRotation = new Quaternion(node.getLocalRotation());
+        currentRotation = new Quaternion(node.getLocalRotation());
         posLerp = -1f;
         rotLerp = -1f;
-        setSpatial(model);
-        model.addControl(this);
+        setSpatial(node);
+        node.addControl(this);
     }
 
     @Override
@@ -44,6 +50,8 @@ public class EntityContol extends AbstractControl {
             if (rotLerp > cl_lerp)
                 rotLerp = -1f;
         }
+        if ((entity.effects & Constants.Effects.ROTATE_Z) > 0)
+            visible.rotate(tpf * 10, 0f, 0f);
     }
 
     @Override

@@ -12,7 +12,7 @@ import com.jme3.scene.*;
 import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.shape.*;
 import com.jme3.system.JmeContext;
-import org.demoth.nogaem.client.controls.EntityContol;
+import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.Entity;
@@ -32,7 +32,7 @@ import static org.demoth.nogaem.common.Util.trimFirstWord;
 public class ClientMain extends SimpleApplication {
     private static final Logger                         log      = LoggerFactory.getLogger(ClientMain.class);
     final                ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final        Map<Integer, EntityContol>     entities = new HashMap<>();
+    private final        Map<Integer, ClientEntity>     entities = new HashMap<>();
     Client net;
     volatile long buttons;
     private  int  myId;
@@ -165,7 +165,7 @@ public class ClientMain extends SimpleApplication {
             node.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
             node.setLocalRotation(entity.state.rot);
         }
-        entities.put(entity.id, new EntityContol(node));
+        entities.put(entity.id, new ClientEntity(entity, node, model));
         rootNode.attachChild(node);
     }
 
@@ -204,7 +204,7 @@ public class ClientMain extends SimpleApplication {
                     endPosition = change.pos;
                     camLerp = 0f;
                 } else {
-                    EntityContol contol = entities.get(change.id);
+                    ClientEntity contol = entities.get(change.id);
                     if (contol != null) {
                         if (change.rot != null && !change.rot.equals(contol.endRotation)) {
                             contol.rotateLerp(change.rot);

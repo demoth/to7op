@@ -12,8 +12,10 @@ public class Entity {
     public int         id;
     public String      modelName;
     public String      name;
-    public float       size = 1f;
+    public float       size        = 1f;
     public EntityState state;
+    public long        effects     = 0;
+    public float       time        = 0f;
 
     public Entity(int id, String modelName, String name, EntityState state, float size) {
         this.id = id;
@@ -36,4 +38,5 @@ public class Entity {
                 ", state=" + state +
                 '}';
     }
+
 }

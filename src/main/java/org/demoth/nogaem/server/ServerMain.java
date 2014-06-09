@@ -1,6 +1,7 @@
 package org.demoth.nogaem.server;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AbstractAppState;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.shapes.*;
 import com.jme3.bullet.control.*;
@@ -27,17 +28,18 @@ public class ServerMain extends SimpleApplication {
     static final Logger   log = LoggerFactory.getLogger(ServerMain.class);
     static final Vector3f up  = new Vector3f(0f, 1f, 0f);
 
-    final Map<Integer, Entity> entities      = new ConcurrentHashMap<>();
-    final Map<Integer, Player> players       = new ConcurrentHashMap<>();
-    final Collection<Message>  requests      = new ConcurrentLinkedQueue<>();
-    final Collection<Entity>   addedEntities = new ConcurrentLinkedQueue<>();
-    final Collection<Integer>  removedIds    = new ConcurrentLinkedQueue<>();
+    final Map<Integer, ServerEntity> entities      = new ConcurrentHashMap<>();
+    final Map<Integer, Player>       players       = new ConcurrentHashMap<>();
+    final Collection<Message>        requests      = new ConcurrentLinkedQueue<>();
+    final Collection<Entity>         addedEntities = new ConcurrentLinkedQueue<>();
+    final Collection<Integer>        removedIds    = new ConcurrentLinkedQueue<>();
     Collection<EntityState> changes = new ConcurrentLinkedQueue<>();
     Random                  random  = new Random();
-    Server         server;
-    BulletAppState bulletAppState;
-    Thread         sender;
-    long           frameIndex;
+    Server            server;
+    BulletAppState    bulletAppState;
+    UpdatingGameState updatingState;
+    Thread            sender;
+    long              frameIndex;
     private int lastId = 10000;
 
     public static void run() {
@@ -79,9 +81,13 @@ public class ServerMain extends SimpleApplication {
         frameIndex = 0;
         server.broadcast(new ChangeMapMessage(mapName));
         stateManager.detach(bulletAppState);
+        stateManager.detach(updatingState);
+        entities.clear();
         if (mapName.isEmpty())
             return;
         bulletAppState = new BulletAppState();
+        updatingState = new UpdatingGameState();
+        stateManager.attach(updatingState);
         stateManager.attach(bulletAppState);
         Spatial sceneModel = assetManager.loadModel(mapName);
         sceneModel.setLocalScale(g_scale);
@@ -102,19 +108,6 @@ public class ServerMain extends SimpleApplication {
         players.values().forEach(pl -> pl.entity.state.pos = pl.physics.getPhysicsLocation());
         requests.forEach(this::processRequest);
         requests.clear();
-        updateGameState();
-    }
-
-    private void updateGameState() {
-        entities.values().stream().filter(e -> e.modelName.equals("axe")).forEach(e -> {
-            if (random.nextFloat() < 0.02f) {
-                e.state.pos = e.state.pos.add(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat())).mult(random.nextFloat());
-                log.trace("New position: " + e.state.pos);
-            }
-            if (random.nextFloat() < 0.02f) {
-                e.state.rot = new Quaternion(random.nextFloat(), random.nextFloat(), random.nextFloat(), random.nextFloat());
-            }
-        });
     }
 
     @Override
@@ -149,7 +142,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendResponses() {
-        changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
+        changes = entities.values().stream().map(e -> e.entity.state).collect(Collectors.toList());
         frameIndex++;
         log.trace("Sending respose to {0}. A={1}, R={2}, C={3}", players.size(), addedEntities.size(), removedIds.size(), changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
@@ -241,9 +234,9 @@ public class ServerMain extends SimpleApplication {
         if (map.isEmpty())
             return;
 
-        player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values())));
+        player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values().stream().map(s -> s.entity).collect(Collectors.toList()))));
         bulletAppState.getPhysicsSpace().add(player.physics);
-        entities.put(conn.getId(), player.entity);
+        entities.put(conn.getId(), new ServerEntity(player.entity, tpf -> player.entity.state.pos = player.physics.getPhysicsLocation()));
         players.put(conn.getId(), player);
         addedEntities.add(player.entity);
     }
@@ -276,7 +269,7 @@ public class ServerMain extends SimpleApplication {
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.physics.jump();
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
-            createProjectile(player.entity.state.rot, player.entity.state.pos);
+            createProjectile(player.entity.state.rot, player.entity.state.pos, request.dir);
         request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
         Vector3f left = request.dir.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
@@ -284,11 +277,24 @@ public class ServerMain extends SimpleApplication {
         player.physics.setWalkDirection(walkDirection.normalize());
     }
 
-    private void createProjectile(Quaternion rot, Vector3f pos) {
+    private void createProjectile(Quaternion rot, Vector3f pos, Vector3f dir) {
         int id = ++lastId;
         Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos), 1f);
-        entities.put(id, axe);
+        axe.effects = Constants.Effects.ROTATE_Z;
+        float ttl = 3f;
+        entities.put(id, new ServerEntity(axe, tpf -> {
+            if (axe.time > ttl)
+                removeEntity(axe.id);
+            axe.time += tpf;
+            axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
+        }));
         addedEntities.add(axe);
+    }
+
+    private void removeEntity(int id) {
+        entities.remove(id);
+        players.remove(id);
+        removedIds.add(id);
     }
 
     private void execCommand(HostedConnection conn, Message message) {
@@ -316,4 +322,10 @@ public class ServerMain extends SimpleApplication {
         return (buttons & desired) > 0;
     }
 
+    class UpdatingGameState extends AbstractAppState {
+        @Override
+        public void update(float tpf) {
+            entities.values().forEach(e -> e.update.accept(tpf));
+        }
+    }
 }

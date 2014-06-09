@@ -30,4 +30,12 @@ public interface Constants {
         long CROUCH        = 1l << 6;
         long USE           = 1l << 7;
     }
+
+    interface Effects {
+        long NONE     = 0;
+        long FLOATING = 1;
+        long ROTATE_X = 2;
+        long ROTATE_Y = 4;
+        long ROTATE_Z = 8;
+    }
 }
