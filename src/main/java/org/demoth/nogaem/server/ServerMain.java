@@ -280,13 +280,13 @@ public class ServerMain extends SimpleApplication {
     private void createProjectile(Quaternion rot, Vector3f pos, Vector3f dir) {
         int id = ++lastId;
         Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos), 1f);
-        axe.effects = Constants.Effects.ROTATE_Z;
+        axe.effects = Constants.Effects.ROTATE_Z | Constants.Effects.FLOATING;
         float ttl = 3f;
         entities.put(id, new ServerEntity(axe, tpf -> {
             if (axe.time > ttl)
                 removeEntity(axe.id);
             axe.time += tpf;
-            axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
+//            axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
         }));
         addedEntities.add(axe);
     }
