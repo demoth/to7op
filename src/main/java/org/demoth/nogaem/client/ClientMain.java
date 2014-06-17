@@ -165,7 +165,7 @@ public class ClientMain extends SimpleApplication {
         BitmapText name = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
         name.setText(entity.name);
         name.setSize(1f);
-        name.move(-size / 2, 0f, size);
+        name.move(-name.getLineWidth() / 2, size + name.getLineHeight(), 0f);
         node.attachChild(name);
         attachCoordinateAxes(node);
 
