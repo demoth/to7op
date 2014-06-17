@@ -34,7 +34,7 @@ public class Config {
     public static        String   cl_user             = "demoth";
     public static        String   cl_pass             = "cadaver";
     public static        long     cl_sleep            = 100;
-    public static        float    cl_float_offset     = 1f;
+    public static        float    cl_float_offset     = 0.5f;
     public static        float    cl_lerp             = sv_sleep / 1000f;
     public static        float    r_ambient           = 1.3f;
 

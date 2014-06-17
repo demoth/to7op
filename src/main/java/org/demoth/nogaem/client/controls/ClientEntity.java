@@ -54,15 +54,17 @@ public class ClientEntity extends AbstractControl {
             if (rotLerp > cl_lerp)
                 rotLerp = -1f;
         }
+        if ((entity.effects & Constants.Effects.ROTATE_X) > 0)
+            visible.rotate(tpf * 5, 0f, 0f);
+        if ((entity.effects & Constants.Effects.ROTATE_Y) > 0)
+            visible.rotate(0f, tpf * 5, 0f);
         if ((entity.effects & Constants.Effects.ROTATE_Z) > 0)
-            visible.rotate(tpf * 10, 0f, 0f);
+            visible.rotate(0f, 0f, tpf * 5);
         if ((entity.effects & Constants.Effects.FLOATING) > 0) {
             floatTime += tpf;
-            // assuming visible.getLocalTranslation = 0
-            Vector3f newLocation = new Vector3f(0f, cl_float_offset * FastMath.sin(10f * floatTime), 0f);
+            // assuming visible.localTranslation == 0
+            Vector3f newLocation = new Vector3f(0f, cl_float_offset * FastMath.sin(5f * floatTime), 0f);
             visible.setLocalTranslation(newLocation);
-            System.out.println("floating:\nnewLocation = " + newLocation + "\nfloatTime = " + floatTime);
-
         }
 
     }

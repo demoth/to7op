@@ -2,6 +2,7 @@ package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
+import com.jme3.font.BitmapText;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
@@ -156,10 +157,17 @@ public class ClientMain extends SimpleApplication {
             default:
                 model = assetManager.loadModel("axe.blend");
         }
-        Geometry bounds = new Geometry(entity.name + "BB", new Box(entity.size, entity.size, entity.size));
+        float size = entity.size;
+        Geometry bounds = new Geometry(entity.name + "BB", new Box(size, size, size));
         bounds.setMaterial(createBoundBoxMaterial());
         node.attachChild(model);
         node.attachChild(bounds);
+        BitmapText name = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
+        name.setText(entity.name);
+        name.setSize(1f);
+        name.move(-size / 2, 0f, size);
+        node.attachChild(name);
+        attachCoordinateAxes(node);
 
         if (entity.state != null) {
             node.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
@@ -258,9 +266,10 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_J));
         inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        inputManager.addMapping(FIRE_SECONDARY, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
         inputManager.addMapping(TOGGLE_CONSOLE, new KeyTrigger(KeyInput.KEY_F1));
 
-        String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY};
+        String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY, FIRE_SECONDARY};
 
         inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
@@ -360,6 +369,9 @@ public class ClientMain extends SimpleApplication {
                 break;
             case FIRE_PRIMARY:
                 buttons = pressOrRelease(buttons, pressed, Constants.Masks.FIRE_PRIMARY);
+                break;
+            case FIRE_SECONDARY:
+                buttons = pressOrRelease(buttons, pressed, Constants.Masks.FIRE_SECONDARY);
         }
     }
 
@@ -387,7 +399,7 @@ public class ClientMain extends SimpleApplication {
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));
-        attachCoordinateAxes(new Vector3f());
+        attachCoordinateAxes(rootNode);
         startSendingUpdates();
     }
 
@@ -400,27 +412,27 @@ public class ClientMain extends SimpleApplication {
         sentDirection = cam.getDirection();
     }
 
-    private void attachCoordinateAxes(Vector3f pos){
+    private void attachCoordinateAxes(Node node){
         Arrow arrow = new Arrow(Vector3f.UNIT_X);
         arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, ColorRGBA.Red).setLocalTranslation(pos);
+        putShape(arrow, node, ColorRGBA.Red);
 
         arrow = new Arrow(Vector3f.UNIT_Y);
         arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, ColorRGBA.Green).setLocalTranslation(pos);
+        putShape(arrow, node, ColorRGBA.Green);
 
         arrow = new Arrow(Vector3f.UNIT_Z);
         arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, ColorRGBA.Blue).setLocalTranslation(pos);
+        putShape(arrow, node, ColorRGBA.Blue);
     }
 
-    private Geometry putShape(Mesh shape, ColorRGBA color){
+    private Geometry putShape(Mesh shape, Node node, ColorRGBA color){
         Geometry g = new Geometry("coordinate axis", shape);
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.getAdditionalRenderState().setWireframe(true);
         mat.setColor("Color", color);
         g.setMaterial(mat);
-        rootNode.attachChild(g);
+        node.attachChild(g);
         return g;
     }
 

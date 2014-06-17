@@ -18,6 +18,8 @@ public class Player {
     public CharacterControl physics;
     public long lastReceivedMessageIndex = 0;
     public boolean isReady = false;
+    // debug
+    public int projectileEffect;
     public Entity entity;
 
     public Player(HostedConnection conn, String name, CharacterControl physics, float size) {

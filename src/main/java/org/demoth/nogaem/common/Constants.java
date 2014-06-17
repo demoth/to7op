@@ -10,6 +10,7 @@ public interface Constants {
         String STRAFE_LEFT    = "left";
         String STRAFE_RIGHT   = "right";
         String FIRE_PRIMARY   = "fire";
+        String FIRE_SECONDARY = "switch";
         String JUMP           = "jump";
         String CROUCH         = "crouch";
         String USE            = "use";
@@ -21,14 +22,15 @@ public interface Constants {
     }
 
     interface Masks {
-        long WALK_FORWARD  = 1l;
-        long WALK_BACKWARD = 1l << 1;
-        long STRAFE_LEFT   = 1l << 2;
-        long STRAFE_RIGHT  = 1l << 3;
-        long FIRE_PRIMARY  = 1l << 4;
-        long JUMP          = 1l << 5;
-        long CROUCH        = 1l << 6;
-        long USE           = 1l << 7;
+        long WALK_FORWARD   = 1l;
+        long WALK_BACKWARD  = 1l << 1;
+        long STRAFE_LEFT    = 1l << 2;
+        long STRAFE_RIGHT   = 1l << 3;
+        long FIRE_SECONDARY = 1l << 4;
+        long FIRE_PRIMARY   = 1l << 5;
+        long JUMP           = 1l << 6;
+        long CROUCH         = 1l << 7;
+        long USE            = 1l << 8;
     }
 
     interface Effects {

@@ -268,8 +268,10 @@ public class ServerMain extends SimpleApplication {
             isStrafing = 1f;
         if (pressed(request.buttons, Constants.Masks.JUMP))
             player.physics.jump();
+        if (pressed(request.buttons, Constants.Masks.FIRE_SECONDARY))
+            player.projectileEffect++;
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
-            createProjectile(player.entity.state.rot, player.entity.state.pos, request.dir);
+            createProjectile(player.entity.state.rot, player.entity.state.pos, player.projectileEffect, request.dir);
         request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
         Vector3f left = request.dir.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
@@ -277,11 +279,40 @@ public class ServerMain extends SimpleApplication {
         player.physics.setWalkDirection(walkDirection.normalize());
     }
 
-    private void createProjectile(Quaternion rot, Vector3f pos, Vector3f dir) {
+    private void createProjectile(Quaternion rot, Vector3f pos, int projectileEffect, Vector3f dir) {
         int id = ++lastId;
-        Entity axe = new Entity(id, "axe", "axe" + id, new EntityState(id, rot, pos), 1f);
-        axe.effects = Constants.Effects.ROTATE_Z | Constants.Effects.FLOATING;
-        float ttl = 3f;
+        String name;
+        long effects;
+        switch (projectileEffect % 6) {
+            case 0:
+            default:
+                name = "none";
+                effects = 0;
+                break;
+            case 1:
+                name = "floating";
+                effects = Constants.Effects.FLOATING;
+                break;
+            case 2:
+                name = "rotate_x";
+                effects = Constants.Effects.ROTATE_X;
+                break;
+            case 3:
+                name = "rotate_y";
+                effects = Constants.Effects.ROTATE_Y;
+                break;
+            case 4:
+                name = "rotate_z";
+                effects = Constants.Effects.ROTATE_Z;
+                break;
+            case 5:
+                name = "rotate_y+float";
+                effects = Constants.Effects.ROTATE_Y | Constants.Effects.FLOATING;
+                break;
+        }
+        Entity axe = new Entity(id, "axe", name, new EntityState(id, rot, pos), 1f);
+        axe.effects = effects;
+        float ttl = 30f;
         entities.put(id, new ServerEntity(axe, tpf -> {
             if (axe.time > ttl)
                 removeEntity(axe.id);
