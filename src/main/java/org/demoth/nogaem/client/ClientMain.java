@@ -10,6 +10,7 @@ import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.network.*;
 import com.jme3.scene.*;
+import com.jme3.scene.control.BillboardControl;
 import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.shape.*;
 import com.jme3.system.JmeContext;
@@ -144,29 +145,32 @@ public class ClientMain extends SimpleApplication {
     // update
     private void addEntity(Entity entity) {
         log.info("Adding " + entity);
-        if (entity.id == myId)
+        if (entity.id == myId && entities.containsKey(entity.id))
             return;
         Node node = new Node(entity.name);
         Spatial model;
         switch (entity.modelName) {
-            case "ninja":
-                model = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
-                model.scale(0.05f);
+            case "player":
+                model = assetManager.loadModel("models/player.blend");
+                model.move(0f, -g_player_height / 2, 0f);
                 break;
             case "axe":
             default:
-                model = assetManager.loadModel("axe.blend");
+                model = assetManager.loadModel("models/axe.blend");
         }
         float size = entity.size;
         Geometry bounds = new Geometry(entity.name + "BB", new Box(size, size, size));
         bounds.setMaterial(createBoundBoxMaterial());
         node.attachChild(model);
         node.attachChild(bounds);
-        BitmapText name = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
-        name.setText(entity.name);
-        name.setSize(1f);
-        name.move(-name.getLineWidth() / 2, size + name.getLineHeight(), 0f);
-        node.attachChild(name);
+        Node textNode = new Node();
+        BitmapText text = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
+        text.setText(entity.name);
+        text.setSize(1f);
+        text.move(-text.getLineWidth() / 2, size + text.getLineHeight(), 0f);
+        textNode.attachChild(text);
+        textNode.addControl(new BillboardControl());
+        node.attachChild(textNode);
         attachCoordinateAxes(node);
 
         if (entity.state != null) {
@@ -209,7 +213,7 @@ public class ClientMain extends SimpleApplication {
             message.changes.forEach(change -> {
                 if (change.id == myId) {
                     startPosition = new Vector3f(cam.getLocation());
-                    endPosition = change.pos;
+                    endPosition = change.pos.add(0f, g_player_height/2, 0f);
                     camLerp = 0f;
                 } else {
                     ClientEntity contol = entities.get(change.id);
@@ -395,7 +399,7 @@ public class ClientMain extends SimpleApplication {
         dl.setColor(ColorRGBA.White);
         dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
         rootNode.addLight(dl);
-        Spatial sceneModel = assetManager.loadModel(mapName);
+        Spatial sceneModel = assetManager.loadModel("maps/" + mapName);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));

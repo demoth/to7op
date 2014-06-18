@@ -24,7 +24,7 @@ public class Player {
 
     public Player(HostedConnection conn, String name, CharacterControl physics, float size) {
         entity = new Entity();
-        entity.modelName = "ninja";
+        entity.modelName = "player";
         entity.id = conn.getId();
         entity.state.id = conn.getId();
         entity.name = name;

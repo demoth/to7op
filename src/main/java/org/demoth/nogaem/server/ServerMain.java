@@ -89,7 +89,7 @@ public class ServerMain extends SimpleApplication {
         updatingState = new UpdatingGameState();
         stateManager.attach(updatingState);
         stateManager.attach(bulletAppState);
-        Spatial sceneModel = assetManager.loadModel(mapName);
+        Spatial sceneModel = assetManager.loadModel("maps/" + mapName);
         sceneModel.setLocalScale(g_scale);
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
         RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0f);
