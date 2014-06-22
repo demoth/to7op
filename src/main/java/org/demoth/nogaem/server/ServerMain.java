@@ -155,7 +155,8 @@ public class ServerMain extends SimpleApplication {
         //log.info("player " + pl.id + " has " + pl.notConfirmedMessages.size() + " non confirmes msgs.");
         GameStateChange msg = new GameStateChange();
         msg.index = frameIndex;
-        msg.added = new HashSet<>(addedEntities);
+        msg.added = new HashMap<>();
+        addedEntities.forEach(e -> msg.added.put(e.id, e));
         msg.removedIds = new HashSet<>(removedIds);
         if (pl.notConfirmedMessages.size() > sv_drop_after) {
             removePlayerFromGame(pl.conn);
@@ -163,7 +164,7 @@ public class ServerMain extends SimpleApplication {
         }
         pl.notConfirmedMessages.forEach(gsm -> {
             if (gsm.added != null)
-                msg.added.addAll(gsm.added);
+                msg.added.putAll(gsm.added);
             if (gsm.removedIds != null)
                 msg.removedIds.addAll(gsm.removedIds);
         });
@@ -234,7 +235,9 @@ public class ServerMain extends SimpleApplication {
         if (map.isEmpty())
             return;
 
-        player.notConfirmedMessages.add(new GameStateChange(new HashSet<>(entities.values().stream().map(s -> s.entity).collect(Collectors.toList()))));
+        HashMap<Integer, Entity> newEntities = new HashMap<>();
+        entities.forEach((i, e) -> newEntities.put(i, e.entity));
+        player.notConfirmedMessages.add(new GameStateChange(newEntities));
         bulletAppState.getPhysicsSpace().add(player.physics);
         entities.put(conn.getId(), new ServerEntity(player.entity, tpf -> player.entity.state.pos = player.physics.getPhysicsLocation()));
         players.put(conn.getId(), player);

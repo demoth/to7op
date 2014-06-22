@@ -13,13 +13,13 @@ import java.util.*;
 public class GameStateChange extends AbstractMessage {
     public long                    index;
     public Collection<EntityState> changes;
-    public Collection<Entity>      added;
+    public Map<Integer, Entity>      added;
     public Collection<Integer>     removedIds;
 
     public GameStateChange() {
     }
 
-    public GameStateChange(Collection<Entity> entities) {
+    public GameStateChange(Map<Integer, Entity> entities) {
         this.added = entities;
     }
 

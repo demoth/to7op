@@ -143,9 +143,9 @@ public class ClientMain extends SimpleApplication {
     }
 
     // update
-    private void addEntity(Entity entity) {
+    private void addEntity(Integer id, Entity entity) {
         log.info("Adding " + entity);
-        if (entity.id == myId && entities.containsKey(entity.id))
+        if (id == myId || entities.containsKey(id))
             return;
         Node node = new Node(entity.name);
         Spatial model;
@@ -177,7 +177,7 @@ public class ClientMain extends SimpleApplication {
             node.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
             node.setLocalRotation(entity.state.rot);
         }
-        entities.put(entity.id, new ClientEntity(entity, node, model));
+        entities.put(id, new ClientEntity(entity, node, model));
         rootNode.attachChild(node);
     }
 
