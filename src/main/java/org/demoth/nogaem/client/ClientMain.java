@@ -144,7 +144,7 @@ public class ClientMain extends SimpleApplication {
 
     // update
     private void addEntity(Integer id, Entity entity) {
-        log.info("Adding " + entity);
+        log.trace("Adding " + entity);
         if (id == myId || entities.containsKey(id))
             return;
         Node node = new Node(entity.name);
@@ -174,7 +174,7 @@ public class ClientMain extends SimpleApplication {
         attachCoordinateAxes(node);
 
         if (entity.state != null) {
-            node.setLocalTranslation(entity.state.pos.x, entity.state.pos.y - 5f, entity.state.pos.z);
+            node.setLocalTranslation(entity.state.pos);
             node.setLocalRotation(entity.state.rot);
         }
         entities.put(id, new ClientEntity(entity, node, model));
