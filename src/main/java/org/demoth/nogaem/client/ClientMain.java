@@ -189,7 +189,10 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void removeEntity(int id) {
-        Spatial sp = entities.get(id).getSpatial();
+        ClientEntity entity = entities.get(id);
+        if (entity == null)
+            return;
+        Spatial sp = entity.getSpatial();
         if (sp == null)
             return;
         rootNode.detachChild(sp);
