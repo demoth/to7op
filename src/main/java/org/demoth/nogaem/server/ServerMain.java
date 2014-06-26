@@ -257,7 +257,7 @@ public class ServerMain extends SimpleApplication {
     private void processRequest(Message message) {
         ActionMessage request = (ActionMessage) message;
         Player player = players.get(request.playerId);
-        if (player == null)
+        if (player == null || !player.isReady)
             return;
         float isWalking = 0f;
         float isStrafing = 0f;
