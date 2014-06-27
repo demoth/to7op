@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nifty xmlns="http://nifty-gui.sourceforge.net/nifty-1.3.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://nifty-gui.sourceforge.net/nifty-1.3.xsd http://nifty-gui.sourceforge.net/nifty-1.3.xsd">
+    <useStyles filename="nifty-default-styles.xml"/>
+    <useControls filename="nifty-default-controls.xml"/>
+    <screen id="mainmenuScreen" controller="org.demoth.nogaem.client.ClientMain">
+        <layer id="mainmenuLayer" childLayout="center">
+            <panel width="75%" height="75%" backgroundColor="#000f" childLayout="vertical">
+                <image align="center" filename="ui/logo.png"/>
+                <text font="Interface/Fonts/Default.fnt" text="Welcome to Nogaem!" align="center"/>
+                <!--<control name="button" label="Resume" id="resumeButton" align="center">-->
+                    <!--<interact onClick="resume()"/>-->
+                <!--</control>-->
+                <!--<control name="button" label="Disconnect" id="disconnectButton" align="center">-->
+                    <!--<interact onClick="enqueue(disconnect)"/>-->
+                <!--</control>-->
+                <control name="button" label="Join" id="joinButton" align="center">
+                    <interact onClick="gotoScreen(loginScreen)"/>
+                </control>
+                <control name="button" label="Options" id="optionsButton" align="center"/>
+                <control name="button" label="Quit" id="quitButton" align="center">
+                        <interact onClick="quit()"/>
+                </control>
+            </panel>
+        </layer>
+    </screen>
+    <screen id="loginScreen" controller="org.demoth.nogaem.client.ClientMain">
+        <layer id="loginLayer" childLayout="center">
+            <panel width="75%" height="75%" backgroundColor="#000f" childLayout="vertical">
+                <text font="Interface/Fonts/Default.fnt" text="Connect to server" align="center"/>
+                <panel childLayout="horizontal" align="center">
+                    <text font="Interface/Fonts/Default.fnt" width="50%" text="Host address:"/>
+                    <control width="50%" name="textfield" id="hostField" text="${CALL.getHost()}" align="center"/>
+                </panel>
+                <panel childLayout="horizontal" align="center">
+                    <text font="Interface/Fonts/Default.fnt" width="50%" text="Port:"/>
+                    <control width="50%" name="textfield" id="portField" text="${CALL.getPort()}" align="center"/>
+                </panel>
+                <panel childLayout="horizontal" align="center">
+                    <text font="Interface/Fonts/Default.fnt" width="50%" text="Username:"/>
+                    <control width="50%" name="textfield" id="usernameField" text="${CALL.getUser()}" align="center"/>
+                </panel>
+                <panel childLayout="horizontal" align="center">
+                    <text font="Interface/Fonts/Default.fnt" width="50%" text="Password:"/>
+                    <control width="50%" name="textfield" id="passwordField" text="${CALL.getPass()}" align="center" passwordChar="F"/>
+                </panel>
+                <control name="button" label="Join" id="joinButton" align="center">
+                        <interact onClick="setConnectParamsAndConnect()"/>
+                </control>
+                <control name="button" label="Back" id="backButton" align="center">
+                    <interact onClick="gotoScreen(mainmenuScreen)"/>
+                </control>
+            </panel>
+        </layer>
+    </screen>
+    <screen id="hud" controller="org.demoth.nogaem.client.ClientMain">
+        <layer childLayout="center" width="10%" height="10%" align="right" valign="top">
+
+        </layer>
+    </screen>
+</nifty>
+

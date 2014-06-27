@@ -9,11 +9,15 @@ import com.jme3.light.*;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.network.*;
+import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.*;
 import com.jme3.scene.control.BillboardControl;
 import com.jme3.scene.debug.Arrow;
-import com.jme3.scene.shape.*;
+import com.jme3.scene.shape.Box;
 import com.jme3.system.JmeContext;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.controls.textfield.TextFieldControl;
+import de.lessvoid.nifty.screen.*;
 import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
@@ -31,7 +35,7 @@ import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
 import static org.demoth.nogaem.common.Util.trimFirstWord;
 
-public class ClientMain extends SimpleApplication {
+public class ClientMain extends SimpleApplication implements ScreenController {
     private static final Logger                         log      = LoggerFactory.getLogger(ClientMain.class);
     final                ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
     private final        Map<Integer, ClientEntity>     entities = new HashMap<>();
@@ -44,11 +48,12 @@ public class ClientMain extends SimpleApplication {
     private float camLerp;
     private Vector3f startPosition = new Vector3f();
     private Vector3f endPosition   = new Vector3f();
-
+    private boolean inMenu = true;
 
     private SwingConsole console;
     private Thread       sender;
     private long         lastReceivedMessage;
+    private Nifty        nifty;
 
     public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
@@ -58,18 +63,18 @@ public class ClientMain extends SimpleApplication {
     public void simpleInitApp() {
         log.info("Starting console...");
         try {
-//            console = new SwingConsole(s -> messages.add(new CommandMessage(s)));
+            console = new SwingConsole(s -> messages.add(new CommandMessage(s)));
         } catch (Exception e) {
             log.error("Could not create console! " + e.getMessage());
         }
         Util.registerMessages();
         log.info("Messages registered");
-        // We load the scene from the zip file and adjust its size.
         Util.scanDataFolder(assetManager);
 
         // todo move to state
         configureInputs();
         flyCam.setMoveSpeed(0);
+        flyCam.setDragToRotate(true);
         stateManager.attach(new AbstractAppState() {
             @Override
             public void update(float tpf) {
@@ -82,8 +87,10 @@ public class ClientMain extends SimpleApplication {
                 }
             }
         });
-        if (!host.isEmpty())
-            connect();
+        initNifty();
+        log.info("GUI initialized");
+//        if (!host.isEmpty())
+//            connect();
     }
 
 
@@ -141,6 +148,16 @@ public class ClientMain extends SimpleApplication {
             log.error(e.getMessage(), e);
         }
     }
+
+    private void initNifty() {
+        NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(
+                assetManager, inputManager, audioRenderer, guiViewPort);
+        Nifty nifty = niftyDisplay.getNifty();
+        nifty.fromXml("ui/screens.xml", "mainmenuScreen", this);
+//        nifty.setDebugOptionPanelColors(true);
+        guiViewPort.addProcessor(niftyDisplay);
+    }
+
 
     // update
     private void addEntity(Integer id, Entity entity) {
@@ -216,7 +233,7 @@ public class ClientMain extends SimpleApplication {
             message.changes.forEach(change -> {
                 if (change.id == myId) {
                     startPosition = new Vector3f(cam.getLocation());
-                    endPosition = change.pos.add(0f, g_player_height/2, 0f);
+                    endPosition = change.pos.add(0f, g_player_height / 2, 0f);
                     camLerp = 0f;
                 } else {
                     ClientEntity contol = entities.get(change.id);
@@ -275,12 +292,25 @@ public class ClientMain extends SimpleApplication {
         inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping(FIRE_SECONDARY, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
         inputManager.addMapping(TOGGLE_CONSOLE, new KeyTrigger(KeyInput.KEY_F1));
-
+        inputManager.deleteMapping(INPUT_MAPPING_EXIT);
+        inputManager.addMapping(TOGGLE_MENU, new KeyTrigger(KeyInput.KEY_ESCAPE));
         String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY, FIRE_SECONDARY};
 
         inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> stop(), INPUT_MAPPING_EXIT);
+        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
+            stop();
+//            if (isPressed) {
+//                if (inMenu) {
+//                    resume();
+//                } else {
+//                    nifty.gotoScreen("mainmenuScreen");
+//                    flyCam.setDragToRotate(true);
+//                    inMenu = true;
+//                }
+//            }
+        }, TOGGLE_MENU);
     }
 
     private void execCommand(String cmdStr) {
@@ -350,6 +380,7 @@ public class ClientMain extends SimpleApplication {
         rootNode.getWorldLightList().clear();
         rootNode.getLocalLightList().clear();
         viewPort.setBackgroundColor(new ColorRGBA(0f, 0f, 0f, 1f));
+        flyCam.setDragToRotate(true);
     }
 
     private void toggleConsole(String actionName, boolean pressed, float tpf) {
@@ -407,6 +438,8 @@ public class ClientMain extends SimpleApplication {
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));
         attachCoordinateAxes(rootNode);
+        flyCam.setDragToRotate(false);
+        nifty.gotoScreen("hud");
         startSendingUpdates();
     }
 
@@ -419,7 +452,7 @@ public class ClientMain extends SimpleApplication {
         sentDirection = cam.getDirection();
     }
 
-    private void attachCoordinateAxes(Node node){
+    private void attachCoordinateAxes(Node node) {
         Arrow arrow = new Arrow(Vector3f.UNIT_X);
         arrow.setLineWidth(4); // make arrow thicker
         putShape(arrow, node, ColorRGBA.Red);
@@ -433,7 +466,7 @@ public class ClientMain extends SimpleApplication {
         putShape(arrow, node, ColorRGBA.Blue);
     }
 
-    private Geometry putShape(Mesh shape, Node node, ColorRGBA color){
+    private Geometry putShape(Mesh shape, Node node, ColorRGBA color) {
         Geometry g = new Geometry("coordinate axis", shape);
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.getAdditionalRenderState().setWireframe(true);
@@ -443,4 +476,64 @@ public class ClientMain extends SimpleApplication {
         return g;
     }
 
+    public void gotoScreen(String name) {
+        nifty.gotoScreen(name);
+    }
+
+    public void enqueue(String cmd) {
+        messages.add(new CommandMessage(cmd));
+    }
+
+    public void quit() {
+        messages.add(new CommandMessage("quit"));
+    }
+
+    public void setConnectParamsAndConnect() {
+        TextFieldControl hostField = nifty.getScreen("loginScreen").findControl("hostField", TextFieldControl.class);
+        Config.host = hostField.getRealText();
+        TextFieldControl portField = nifty.getScreen("loginScreen").findControl("portField", TextFieldControl.class);
+        Config.port = Integer.parseInt(portField.getRealText());
+        TextFieldControl usernameField = nifty.getScreen("loginScreen").findControl("usernameField", TextFieldControl.class);
+        Config.cl_user = usernameField.getRealText();
+        TextFieldControl passwordField = nifty.getScreen("loginScreen").findControl("passwordField", TextFieldControl.class);
+        Config.cl_pass = passwordField.getRealText();
+        messages.add(new CommandMessage("connect"));
+    }
+
+    public String getUser() {
+        return Config.cl_user;
+    }
+
+    public String getPass() {
+        return Config.cl_pass;
+    }
+
+    public String getHost() {
+        return Config.host;
+    }
+
+    public Integer getPort() {
+        return Config.port;
+    }
+
+    public void resume() {
+        nifty.gotoScreen("hud");
+        flyCam.setDragToRotate(false);
+        inMenu = false;
+    }
+
+    @Override
+    public void bind(Nifty nifty, Screen screen) {
+        this.nifty = nifty;
+    }
+
+    @Override
+    public void onStartScreen() {
+
+    }
+
+    @Override
+    public void onEndScreen() {
+
+    }
 }

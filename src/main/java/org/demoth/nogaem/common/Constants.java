@@ -19,6 +19,7 @@ public interface Constants {
         String LOOK_LEFT      = "lookLeft";
         String LOOK_RIGHT     = "lookRight";
         String TOGGLE_CONSOLE = "toggleConsole";
+        String TOGGLE_MENU    = "toggleMenu";
     }
 
     interface Masks {
