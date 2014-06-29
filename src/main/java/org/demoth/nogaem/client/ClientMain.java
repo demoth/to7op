@@ -29,7 +29,7 @@ import org.slf4j.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 
 import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;
@@ -283,10 +283,10 @@ public class ClientMain extends SimpleApplication implements ScreenController {
 
     // init
     private void configureInputs() {
-        inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_Y));
-        inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_H));
-        inputManager.addMapping(STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_G));
-        inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_J));
+        inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping(STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
         inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping(FIRE_SECONDARY, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
