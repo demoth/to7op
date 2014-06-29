@@ -3,7 +3,7 @@
        xsi:schemaLocation="http://nifty-gui.sourceforge.net/nifty-1.3.xsd http://nifty-gui.sourceforge.net/nifty-1.3.xsd">
     <useStyles filename="nifty-default-styles.xml"/>
     <useControls filename="nifty-default-controls.xml"/>
-    <screen id="mainmenuScreen" controller="org.demoth.nogaem.client.ClientMain">
+    <screen id="mainmenuScreen" controller="org.demoth.nogaem.client.ClientScreenController">
         <layer id="mainmenuLayer" childLayout="center">
             <panel width="75%" height="75%" backgroundColor="#000f" childLayout="vertical">
                 <image align="center" filename="ui/logo.png"/>
@@ -12,7 +12,7 @@
                     <interact onClick="resume()"/>
                 </control>
                 <control name="button" label="Disconnect" id="disconnectButton" align="center">
-                    <interact onClick="enqueue(disconnect)"/>
+                    <interact onClick="disconnect()"/>
                 </control>
                 <control name="button" label="Join" id="joinButton" align="center">
                     <interact onClick="gotoScreen(loginScreen)"/>
@@ -24,7 +24,7 @@
             </panel>
         </layer>
     </screen>
-    <screen id="loginScreen" controller="org.demoth.nogaem.client.ClientMain">
+    <screen id="loginScreen" controller="org.demoth.nogaem.client.ClientScreenController">
         <layer id="loginLayer" childLayout="center">
             <panel width="75%" height="75%" backgroundColor="#000f" childLayout="vertical">
                 <text font="Interface/Fonts/Default.fnt" text="Connect to server" align="center"/>
@@ -53,9 +53,9 @@
             </panel>
         </layer>
     </screen>
-    <screen id="hud" controller="org.demoth.nogaem.client.ClientMain">
+    <screen id="hud" controller="org.demoth.nogaem.client.ClientScreenController">
         <layer childLayout="center" width="10%" height="10%" align="right" valign="top">
-
+            <text font="Interface/Fonts/Default.fnt" width="50%" text="HUD"/>
         </layer>
     </screen>
 </nifty>
