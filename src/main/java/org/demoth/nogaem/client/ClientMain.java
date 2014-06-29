@@ -494,6 +494,7 @@ public class ClientMain extends SimpleApplication implements ScreenController {
         Config.cl_user = usernameField.getRealText();
         TextFieldControl passwordField = nifty.getScreen("loginScreen").findControl("passwordField", TextFieldControl.class);
         Config.cl_pass = passwordField.getRealText();
+        Config.save("client.cfg");
         messages.add(new CommandMessage("connect"));
     }
 
