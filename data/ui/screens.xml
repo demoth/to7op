@@ -8,12 +8,12 @@
             <panel width="75%" height="75%" backgroundColor="#000f" childLayout="vertical">
                 <image align="center" filename="ui/logo.png"/>
                 <text font="Interface/Fonts/Default.fnt" text="Welcome to Nogaem!" align="center"/>
-                <!--<control name="button" label="Resume" id="resumeButton" align="center">-->
-                    <!--<interact onClick="resume()"/>-->
-                <!--</control>-->
-                <!--<control name="button" label="Disconnect" id="disconnectButton" align="center">-->
-                    <!--<interact onClick="enqueue(disconnect)"/>-->
-                <!--</control>-->
+                <control name="button" label="Resume" id="resumeButton" align="center">
+                    <interact onClick="resume()"/>
+                </control>
+                <control name="button" label="Disconnect" id="disconnectButton" align="center">
+                    <interact onClick="enqueue(disconnect)"/>
+                </control>
                 <control name="button" label="Join" id="joinButton" align="center">
                     <interact onClick="gotoScreen(loginScreen)"/>
                 </control>

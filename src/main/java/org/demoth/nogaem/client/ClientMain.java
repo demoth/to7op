@@ -137,8 +137,7 @@ public class ClientMain extends SimpleApplication implements ScreenController {
 
                 @Override
                 public void clientDisconnected(Client c, DisconnectInfo info) {
-                    stopSendingUpdates();
-                    stop();
+                    resetClient();
                 }
             });
             net.start();
@@ -300,16 +299,15 @@ public class ClientMain extends SimpleApplication implements ScreenController {
         inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> stop(), INPUT_MAPPING_EXIT);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
-            stop();
-//            if (isPressed) {
-//                if (inMenu) {
-//                    resume();
-//                } else {
-//                    nifty.gotoScreen("mainmenuScreen");
-//                    flyCam.setDragToRotate(true);
-//                    inMenu = true;
-//                }
-//            }
+            if (isPressed) {
+                if (inMenu) {
+                    resume();
+                } else {
+                    nifty.gotoScreen("mainmenuScreen");
+                    flyCam.setDragToRotate(true);
+                    inMenu = true;
+                }
+            }
         }, TOGGLE_MENU);
     }
 
@@ -370,7 +368,6 @@ public class ClientMain extends SimpleApplication implements ScreenController {
     private void disconnect() {
         if (net != null && net.isConnected())
             net.close();
-        resetClient();
     }
 
     private void resetClient() {
