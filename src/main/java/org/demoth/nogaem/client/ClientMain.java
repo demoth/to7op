@@ -9,14 +9,13 @@ import com.jme3.light.*;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.*;
 import com.jme3.scene.control.BillboardControl;
 import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.JmeContext;
-import de.lessvoid.nifty.Nifty;
 import org.demoth.nogaem.client.controls.ClientEntity;
+import org.demoth.nogaem.client.gui.*;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.Entity;
@@ -84,7 +83,8 @@ public class ClientMain extends SimpleApplication {
                 }
             }
         });
-        initNifty();
+        screenController = Screens.createController(assetManager, inputManager, audioRenderer, guiViewPort, this);
+        screenController.showMainMenu();
         log.info("GUI initialized");
 //        if (!host.isEmpty())
 //            connect();
@@ -143,16 +143,7 @@ public class ClientMain extends SimpleApplication {
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
-    }
-
-    private void initNifty() {
-        NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(
-                assetManager, inputManager, audioRenderer, guiViewPort);
-        Nifty nifty = niftyDisplay.getNifty();
-        screenController = new ClientScreenController(this);
-        nifty.fromXml("ui/screens.xml", "mainmenuScreen", screenController);
-//        nifty.setDebugOptionPanelColors(true);
-        guiViewPort.addProcessor(niftyDisplay);
+        screenController.checkConnectionResumeDisconnect();
     }
 
     // update
@@ -358,6 +349,7 @@ public class ClientMain extends SimpleApplication {
     private void disconnect() {
         if (net != null && net.isConnected())
             net.close();
+        screenController.checkConnectionResumeDisconnect();
     }
 
     private void resetClient() {
@@ -426,7 +418,7 @@ public class ClientMain extends SimpleApplication {
         net.send(new Acknowledgement(-1));
         attachCoordinateAxes(rootNode);
         flyCam.setDragToRotate(false);
-        screenController.gotoScreen("hud");
+        screenController.resume();
         startSendingUpdates();
     }
 
@@ -469,5 +461,9 @@ public class ClientMain extends SimpleApplication {
 
     public void setMouseVisible(boolean mouseVisible) {
         flyCam.setDragToRotate(mouseVisible);
+    }
+
+    public boolean isConnected() {
+        return net != null && net.isConnected();
     }
 }

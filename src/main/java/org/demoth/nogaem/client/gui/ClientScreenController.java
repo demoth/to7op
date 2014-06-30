@@ -1,8 +1,10 @@
-package org.demoth.nogaem.client;
+package org.demoth.nogaem.client.gui;
 
 import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.controls.button.ButtonControl;
 import de.lessvoid.nifty.controls.textfield.TextFieldControl;
 import de.lessvoid.nifty.screen.*;
+import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
 
 /**
@@ -11,10 +13,9 @@ import org.demoth.nogaem.common.Config;
 public class ClientScreenController implements ScreenController {
 
     private ClientMain client;
-    private Nifty  nifty;
-    private Screen screen;
+    private Nifty      nifty;
 
-    public ClientScreenController(ClientMain client) {
+    ClientScreenController(ClientMain client) {
         this.client = client;
     }
 
@@ -22,7 +23,6 @@ public class ClientScreenController implements ScreenController {
     public void bind(Nifty nifty, Screen screen) {
 
         this.nifty = nifty;
-        this.screen = screen;
     }
 
     @Override
@@ -78,17 +78,30 @@ public class ClientScreenController implements ScreenController {
     }
 
     public void resume() {
-        nifty.gotoScreen("hud");
-        client.setMouseVisible(false);
-    }
-
-    public void toggleMainMenu(){
-        if ("hud".equals(nifty.getCurrentScreen().getScreenId())) {
-            nifty.gotoScreen("mainmenuScreen");
-            client.setMouseVisible(true);
-        } else {
+        if (client.isConnected()) {
             nifty.gotoScreen("hud");
             client.setMouseVisible(false);
         }
+    }
+
+    public void toggleMainMenu() {
+        if ("hud".equals(nifty.getCurrentScreen().getScreenId())) {
+            showMainMenu();
+        } else {
+            resume();
+        }
+    }
+
+    public void showMainMenu() {
+        nifty.gotoScreen("mainmenuScreen");
+        client.setMouseVisible(true);
+        checkConnectionResumeDisconnect();
+    }
+
+    public void checkConnectionResumeDisconnect() {
+        ButtonControl resumeButton = nifty.getScreen("mainmenuScreen").findControl("resumeButton", ButtonControl.class);
+        resumeButton.setEnabled(client.isConnected());
+        ButtonControl disconnectButton = nifty.getScreen("mainmenuScreen").findControl("disconnectButton", ButtonControl.class);
+        disconnectButton.setEnabled(client.isConnected());
     }
 }
