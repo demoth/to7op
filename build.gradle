@@ -28,6 +28,7 @@ task copyBin(dependsOn: 'installApp', type: Copy) {
 
 task releaseBin(dependsOn: 'copyBin') {
     def ver = new File('binrepo/version')
-    ver.delete()
+    if (ver.exists())
+        ver.delete()
     ver << 'git describe'.execute().in.text
 }
