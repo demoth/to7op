@@ -32,3 +32,13 @@ task releaseBin(dependsOn: 'copyBin') {
         ver.delete()
     ver << 'git describe'.execute().in.text
 }
+
+task writeVersion() {
+    def ver = new File('data/version')
+    if (ver.exists())
+        ver.delete()
+    ver << 'git describe'.execute().in.text
+
+}
+
+distZip.mustRunAfter 'writeVersion'
