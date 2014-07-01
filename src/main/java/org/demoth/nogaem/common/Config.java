@@ -37,6 +37,7 @@ public class Config {
     public static        float    cl_float_offset     = 0.5f;
     public static        float    cl_lerp             = sv_sleep / 1000f;
     public static        float    r_ambient           = 1.3f;
+    public static        String   gamedir             = "data";
 
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES END         /////////////////////

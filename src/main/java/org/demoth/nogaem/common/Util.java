@@ -12,7 +12,10 @@ import org.demoth.nogaem.server.Player;
 import org.slf4j.*;
 
 import java.io.File;
+import java.nio.file.*;
 import java.util.Arrays;
+
+import static org.demoth.nogaem.common.Config.gamedir;
 
 /**
  * @author demoth
@@ -25,12 +28,18 @@ public class Util {
     }
 
     public static void scanDataFolder(AssetManager assetManager) {
-        assetManager.registerLocator("data/", FileLocator.class);
+        if (!Files.exists(Paths.get(gamedir))) {
+            log.warn("gamedir: " + gamedir + " not found in current directory. Trying to find it above...");
+            if (Files.exists(Paths.get("../" + gamedir))) {
+                log.info("Found in ../");
+                gamedir = "../" + gamedir;
+            } else if (gamedir.startsWith("../") && Files.exists(Paths.get(gamedir.replaceFirst("\\.\\./","")))) {
+                log.info("Found in current");
+                gamedir = gamedir.replaceFirst("\\.\\./", "");
+            }
+        }
+        assetManager.registerLocator(gamedir + '/', FileLocator.class);
         assetManager.registerLoader(BlenderModelLoader.class, "blend");
-        Arrays.stream(new File("data").listFiles(file -> file.getName().endsWith("zip"))).forEach(f -> {
-            log.info("Registering data file: " + f.getName());
-            assetManager.registerLocator("data/" + f.getName(), ZipLocator.class);
-        });
     }
 
     public static void registerMessages() {

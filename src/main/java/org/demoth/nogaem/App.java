@@ -27,18 +27,17 @@ public class App {
 
         try {
             CommandLine cmd = new GnuParser().parse(options, args);
-
-            if (cmd.hasOption("server")) {
+            if (cmd.hasOption("help")) {
+                printUsage(options);
+            } else if (cmd.hasOption("server")) {
                 Config.loadOrSave("server.cfg");
                 setCvarsFromCmdline(cmd);
                 ServerMain.run();
-            } else if (cmd.hasOption("client")) {
+            } else {
                 Config.loadOrSave("client.cfg");
                 setCvarsFromCmdline(cmd);
                 ClientMain.run();
-            } else
-                printUsage(options);
-
+            }
         } catch (ParseException e) {
             printUsage(options);
         }
