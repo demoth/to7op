@@ -20,3 +20,14 @@ dependencies {
 applicationDistribution.from('data') {
     into 'data'
 }
+
+task copyBin(dependsOn: 'installApp', type: Copy) {
+    from 'build/install'
+    into 'binrepo'
+}
+
+task releaseBin(dependsOn: 'copyBin') {
+    def ver = new File('binrepo/version')
+    ver.delete()
+    ver << 'git describe'.execute().in.text
+}
