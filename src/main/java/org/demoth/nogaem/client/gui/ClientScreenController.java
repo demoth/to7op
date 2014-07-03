@@ -80,7 +80,7 @@ public class ClientScreenController implements ScreenController {
     public void resume() {
         if (client.isConnected()) {
             nifty.gotoScreen("hud");
-            client.setMouseVisible(false);
+            client.enableIngameState(false);
         }
     }
 
@@ -94,7 +94,7 @@ public class ClientScreenController implements ScreenController {
 
     public void showMainMenu() {
         nifty.gotoScreen("mainmenuScreen");
-        client.setMouseVisible(true);
+        client.enableIngameState(true);
         checkConnectionResumeDisconnect();
     }
 

@@ -16,6 +16,7 @@ import com.jme3.scene.shape.Box;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.client.gui.*;
+import org.demoth.nogaem.client.states.IngameState;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.Entity;
@@ -50,6 +51,7 @@ public class ClientMain extends SimpleApplication {
     private Thread                 sender;
     private long                   lastReceivedMessage;
     private ClientScreenController screenController;
+    private IngameState            ingameState;
 
     public static void run() {
         new ClientMain().start(JmeContext.Type.Display);
@@ -67,10 +69,10 @@ public class ClientMain extends SimpleApplication {
         log.info("Messages registered");
         Util.scanDataFolder(assetManager);
 
-        // todo move to state
         configureInputs();
-        flyCam.setMoveSpeed(0);
-        flyCam.setDragToRotate(true);
+        ingameState = new IngameState(inputManager, flyCam, this);
+        flyCam.setEnabled(false);
+        inputManager.setCursorVisible(true);
         stateManager.attach(new AbstractAppState() {
             @Override
             public void update(float tpf) {
@@ -271,21 +273,11 @@ public class ClientMain extends SimpleApplication {
 
     // init
     private void configureInputs() {
-        inputManager.addMapping(WALK_FORWARD, new KeyTrigger(KeyInput.KEY_W));
-        inputManager.addMapping(WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_S));
-        inputManager.addMapping(STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
-        inputManager.addMapping(STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
-        inputManager.addMapping(JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
-        inputManager.addMapping(FIRE_PRIMARY, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-        inputManager.addMapping(FIRE_SECONDARY, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
         inputManager.addMapping(TOGGLE_CONSOLE, new KeyTrigger(KeyInput.KEY_F1));
         inputManager.deleteMapping(INPUT_MAPPING_EXIT);
         inputManager.addMapping(TOGGLE_MENU, new KeyTrigger(KeyInput.KEY_ESCAPE));
-        String buttonMappings[] = {WALK_FORWARD, WALK_BACKWARD, STRAFE_LEFT, STRAFE_RIGHT, JUMP, FIRE_PRIMARY, FIRE_SECONDARY};
 
         inputManager.addListener((ActionListener) this::toggleConsole, TOGGLE_CONSOLE);
-        inputManager.addListener((ActionListener) this::pushButton, buttonMappings);
-        inputManager.addListener((ActionListener) (name, isPressed, tpf) -> stop(), INPUT_MAPPING_EXIT);
         inputManager.addListener((ActionListener) (name, isPressed, tpf) -> {
             if (isPressed) {
                 screenController.toggleMainMenu();
@@ -347,6 +339,7 @@ public class ClientMain extends SimpleApplication {
     }
 
     private void disconnect() {
+        messages.clear();
         if (net != null && net.isConnected())
             net.close();
         screenController.checkConnectionResumeDisconnect();
@@ -355,11 +348,15 @@ public class ClientMain extends SimpleApplication {
     private void resetClient() {
         lastReceivedMessage = 0;
         stopSendingUpdates();
+        cam.setLocation(new Vector3f());
+        camLerp = -1;
+        startPosition = new Vector3f();
+        endPosition = new Vector3f();
         rootNode.detachAllChildren();
         rootNode.getWorldLightList().clear();
         rootNode.getLocalLightList().clear();
         viewPort.setBackgroundColor(new ColorRGBA(0f, 0f, 0f, 1f));
-        flyCam.setDragToRotate(true);
+        stateManager.detach(ingameState);
     }
 
     private void toggleConsole(String actionName, boolean pressed, float tpf) {
@@ -367,7 +364,7 @@ public class ClientMain extends SimpleApplication {
             console.setVisible(!console.isVisible());
     }
 
-    private void pushButton(String actionName, boolean pressed, float tpf) {
+    public void pushButton(String actionName, boolean pressed, float tpf) {
         switch (actionName) {
             case WALK_FORWARD:
                 buttons = pressOrRelease(buttons, pressed, Constants.Masks.WALK_FORWARD);
@@ -417,7 +414,7 @@ public class ClientMain extends SimpleApplication {
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));
         attachCoordinateAxes(rootNode);
-        flyCam.setDragToRotate(false);
+        stateManager.attach(ingameState);
         screenController.resume();
         startSendingUpdates();
     }
@@ -459,8 +456,11 @@ public class ClientMain extends SimpleApplication {
         messages.add(new CommandMessage(cmd));
     }
 
-    public void setMouseVisible(boolean mouseVisible) {
-        flyCam.setDragToRotate(mouseVisible);
+    public void enableIngameState(boolean enable) {
+        if (enable)
+            stateManager.detach(ingameState);
+        else
+            stateManager.attach(ingameState);
     }
 
     public boolean isConnected() {
