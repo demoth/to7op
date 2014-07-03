@@ -1,7 +1,7 @@
 package org.demoth.nogaem;
 
 import org.apache.commons.cli.*;
-import org.demoth.nogaem.client.ClientMain;
+import org.demoth.nogaem.client.ClientMainImpl;
 import org.demoth.nogaem.common.Config;
 import org.demoth.nogaem.server.ServerMain;
 import org.slf4j.*;
@@ -36,7 +36,7 @@ public class App {
             } else {
                 Config.loadOrSave("client.cfg");
                 setCvarsFromCmdline(cmd);
-                ClientMain.run();
+                ClientMainImpl.run();
             }
         } catch (ParseException e) {
             printUsage(options);
