@@ -11,7 +11,7 @@ import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.entities.*;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
@@ -19,7 +19,6 @@ import org.slf4j.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;

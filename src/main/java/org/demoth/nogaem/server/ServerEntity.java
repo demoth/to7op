@@ -1,7 +1,7 @@
 package org.demoth.nogaem.server;
 
 import org.demoth.nogaem.common.entities.EntityInfo;
-import org.demoth.nogaem.common.messages.fromServer.EntityState;
+import org.demoth.nogaem.common.entities.EntityState;
 
 import java.util.function.Consumer;
 

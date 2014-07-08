@@ -6,7 +6,6 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.EntityInfo;
-import org.demoth.nogaem.common.messages.fromServer.EntityState;
 
 import static org.demoth.nogaem.common.Config.cl_float_offset;
 import static org.demoth.nogaem.common.Config.cl_lerp;

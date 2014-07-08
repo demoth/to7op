@@ -2,7 +2,7 @@ package org.demoth.nogaem.common.messages.fromServer;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
-import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.entities.*;
 
 import java.util.*;
 

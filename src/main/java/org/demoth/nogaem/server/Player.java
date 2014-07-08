@@ -3,7 +3,7 @@ package org.demoth.nogaem.server;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.*;
 import com.jme3.network.HostedConnection;
-import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.entities.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
 
 import java.util.*;
