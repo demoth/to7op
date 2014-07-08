@@ -19,7 +19,7 @@ import org.demoth.nogaem.client.gui.*;
 import org.demoth.nogaem.client.states.IngameState;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.entities.*;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
@@ -39,7 +39,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private final        Map<Integer, ClientEntity>     entities = new HashMap<>();
     Client net;
     volatile long buttons;
-    private int  myId;
+    private  int  myId;
     private long     sentButtons   = 0;
     private Vector3f sentDirection = new Vector3f();
     // interpolation
@@ -52,6 +52,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private long                   lastReceivedMessage;
     private ClientScreenController screenController;
     private IngameState            ingameState;
+    private EntityFactory          entityFactory;
 
     public static void run() {
         new ClientMainImpl().start(JmeContext.Type.Display);
@@ -87,6 +88,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         });
         screenController = Screens.createController(assetManager, inputManager, audioRenderer, guiViewPort, this);
         screenController.showMainMenu();
+        entityFactory = new EntityFactory(assetManager, rootNode);
         log.info("GUI initialized");
 //        if (!host.isEmpty())
 //            connect();
@@ -153,43 +155,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         log.info("Adding " + entityInfo);
         if (id == myId || entities.containsKey(id))
             return;
-        Node node = new Node(entityInfo.name);
-        Spatial model;
-        float size;
-        switch (entityInfo.typeId) {
-            case 1:
-                model = assetManager.loadModel("models/player.blend");
-                model.move(0f, -g_player_height / 2, 0f);
-                size = 5f;
-                break;
-            case 2:
-            default:
-                model = assetManager.loadModel("models/axe.blend");
-                size = 1f;
-        }
-        Geometry bounds = new Geometry(entityInfo.name + "BB", new Box(size, size, size));
-        bounds.setMaterial(createBoundBoxMaterial());
-        node.attachChild(model);
-        node.attachChild(bounds);
-        Node textNode = new Node();
-        BitmapText text = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
-        text.setText(entityInfo.name);
-        text.setSize(1f);
-        text.move(-text.getLineWidth() / 2, size + text.getLineHeight(), 0f);
-        textNode.attachChild(text);
-        textNode.addControl(new BillboardControl());
-        node.attachChild(textNode);
-        attachCoordinateAxes(node);
-
-        entities.put(id, new ClientEntity(entityInfo, node, model));
-        rootNode.attachChild(node);
-    }
-
-    private Material createBoundBoxMaterial() {
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.getAdditionalRenderState().setWireframe(true);
-        mat.setColor("Color", ColorRGBA.Blue);
-        return mat;
+        entities.put(id, entityFactory.createClientEntity(entityInfo));
     }
 
     private void removeEntity(int id) {
@@ -420,7 +386,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
         net.send(new Acknowledgement(-1));
-        attachCoordinateAxes(rootNode);
+        Util.attachCoordinateAxes(rootNode, assetManager);
         stateManager.attach(ingameState);
         screenController.resume();
         startSendingUpdates();
@@ -435,29 +401,6 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         sentDirection = cam.getDirection();
     }
 
-    private void attachCoordinateAxes(Node node) {
-        Arrow arrow = new Arrow(Vector3f.UNIT_X);
-        arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, node, ColorRGBA.Red);
-
-        arrow = new Arrow(Vector3f.UNIT_Y);
-        arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, node, ColorRGBA.Green);
-
-        arrow = new Arrow(Vector3f.UNIT_Z);
-        arrow.setLineWidth(4); // make arrow thicker
-        putShape(arrow, node, ColorRGBA.Blue);
-    }
-
-    private Geometry putShape(Mesh shape, Node node, ColorRGBA color) {
-        Geometry g = new Geometry("coordinate axis", shape);
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.getAdditionalRenderState().setWireframe(true);
-        mat.setColor("Color", color);
-        g.setMaterial(mat);
-        node.attachChild(g);
-        return g;
-    }
 
     @Override
     public void enqueue(String cmd) {
