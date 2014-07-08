@@ -11,7 +11,7 @@ import com.jme3.network.*;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
@@ -19,6 +19,7 @@ import org.slf4j.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
@@ -31,10 +32,9 @@ public class ServerMain extends SimpleApplication {
     final Map<Integer, ServerEntity> entities      = new ConcurrentHashMap<>();
     final Map<Integer, Player>       players       = new ConcurrentHashMap<>();
     final Collection<Message>        requests      = new ConcurrentLinkedQueue<>();
-    final Collection<Entity>         addedEntities = new ConcurrentLinkedQueue<>();
+    final Collection<EntityInfo>     addedEntities = new ConcurrentLinkedQueue<>();
     final Collection<Integer>        removedIds    = new ConcurrentLinkedQueue<>();
     Collection<EntityState> changes = new ConcurrentLinkedQueue<>();
-    Random                  random  = new Random();
     Server            server;
     BulletAppState    bulletAppState;
     UpdatingGameState updatingState;
@@ -105,7 +105,6 @@ public class ServerMain extends SimpleApplication {
     @Override
     public void update() {
         super.update();
-        players.values().forEach(pl -> pl.entity.state.pos = pl.physics.getPhysicsLocation());
         requests.forEach(this::processRequest);
         requests.clear();
     }
@@ -142,7 +141,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendResponses() {
-        changes = entities.values().stream().map(e -> e.entity.state).collect(Collectors.toList());
+        changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
         frameIndex++;
         log.trace("Sending respose to {0}. A={1}, R={2}, C={3}", players.size(), addedEntities.size(), removedIds.size(), changes.size());
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
@@ -170,7 +169,7 @@ public class ServerMain extends SimpleApplication {
         });
         pl.notConfirmedMessages.add(msg);
         msg.changes = changes;
-        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
+        log.trace("Changes for {0} A={1} R={2} C={3}", pl.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
         return msg;
     }
 
@@ -200,7 +199,7 @@ public class ServerMain extends SimpleApplication {
     }
 
     private void sendChatMsg(HostedConnection conn, Message message) {
-        server.broadcast(new TextMessage(players.get(conn.getId()).entity.name + ':' + ((TextMessage) message).text));
+        server.broadcast(new TextMessage(players.get(conn.getId()).info.name + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
@@ -214,7 +213,7 @@ public class ServerMain extends SimpleApplication {
         Player player = players.get(conn.getId());
         if (player == null)
             return;
-        log.info("disconnecting: " + player.entity.name + " id: " + conn.getId());
+        log.info("disconnecting: " + player.info.name + " id: " + conn.getId());
         bulletAppState.getPhysicsSpace().remove(player.physics);
         entities.remove(conn.getId());
         players.remove(conn.getId());
@@ -225,23 +224,26 @@ public class ServerMain extends SimpleApplication {
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginRequestMessage received: " + message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
-        if (players.values().stream().anyMatch(p -> p.entity.name.equals(msg.login))) {
+        if (players.values().stream().anyMatch(p -> p.info.name.equals(msg.login))) {
             conn.close("Player with login " + msg.login + " is already in game");
             return;
         }
-        Player player = new Player(conn, msg.login, createPlayerPhysics(), g_player_height);
-        server.broadcast(in(conn), new JoinedGameMessage(player.entity.id, map));
-
+        Player player = new Player(conn, msg.login, createPlayerPhysics());
+        server.broadcast(in(conn), new JoinedGameMessage(player.info.id, map));
         if (map.isEmpty())
             return;
 
-        HashMap<Integer, Entity> newEntities = new HashMap<>();
-        entities.forEach((i, e) -> newEntities.put(i, e.entity));
-        player.notConfirmedMessages.add(new GameStateChange(newEntities));
+        Map<Integer, EntityInfo> newEntities = new HashMap<>();
+        Collection<EntityState> changes = new HashSet<>();
+        entities.forEach((i, e) -> {
+            newEntities.put(i, e.info);
+            changes.add(e.state);
+        });
+        player.notConfirmedMessages.add(new GameStateChange(newEntities, changes));
         bulletAppState.getPhysicsSpace().add(player.physics);
-        entities.put(conn.getId(), new ServerEntity(player.entity, tpf -> player.entity.state.pos = player.physics.getPhysicsLocation()));
+        entities.put(conn.getId(), new ServerEntity(player.info, player.state, tpf -> player.state.pos = player.physics.getPhysicsLocation()));
         players.put(conn.getId(), player);
-        addedEntities.add(player.entity);
+        addedEntities.add(player.info);
     }
 
     private CharacterControl createPlayerPhysics() {
@@ -274,11 +276,11 @@ public class ServerMain extends SimpleApplication {
         if (pressed(request.buttons, Constants.Masks.FIRE_SECONDARY))
             player.projectileEffect++;
         if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
-            createProjectile(player.entity.state.rot, player.entity.state.pos, player.projectileEffect, request.dir);
+            createProjectile(player.state.rot, player.state.pos, player.projectileEffect, request.dir);
         request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
         Vector3f left = request.dir.cross(up).multLocal(isStrafing);
         Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
-        player.entity.state.rot = request.rot;
+        player.state.rot = request.rot;
         player.physics.setWalkDirection(walkDirection.normalize());
     }
 
@@ -313,16 +315,17 @@ public class ServerMain extends SimpleApplication {
                 effects = Constants.Effects.ROTATE_Y | Constants.Effects.FLOATING;
                 break;
         }
-        Entity axe = new Entity(id, "axe", name, new EntityState(id, rot, pos), 1f);
-        axe.effects = effects;
+        EntityInfo axeInfo = new EntityInfo(id, 2, name, effects);
+        ServerEntity axe = new ServerEntity(axeInfo, new EntityState(id, rot, pos));
         float ttl = 30f;
-        entities.put(id, new ServerEntity(axe, tpf -> {
+        axe.update = tpf -> {
             if (axe.time > ttl)
-                removeEntity(axe.id);
+                removeEntity(axeInfo.id);
             axe.time += tpf;
-//            axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
-        }));
-        addedEntities.add(axe);
+            //axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
+        };
+        entities.put(id, axe);
+        addedEntities.add(axeInfo);
     }
 
     private void removeEntity(int id) {

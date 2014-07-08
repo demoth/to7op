@@ -2,7 +2,7 @@ package org.demoth.nogaem.common.messages.fromServer;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Serializable
 public class AddedEntities extends AbstractMessage {
-    public List<Entity> added;
+    public List<EntityInfo> added;
 
     @Override
     public String toString() {

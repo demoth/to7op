@@ -5,7 +5,8 @@ import com.jme3.renderer.*;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.messages.fromServer.EntityState;
 
 import static org.demoth.nogaem.common.Config.cl_float_offset;
 import static org.demoth.nogaem.common.Config.cl_lerp;
@@ -14,22 +15,23 @@ import static org.demoth.nogaem.common.Config.cl_lerp;
  * @author demoth
  */
 public class ClientEntity extends AbstractControl {
-    public Entity     entity;
-    public Spatial    visible;
-    public float      posLerp;
-    public float      rotLerp;
-    public Vector3f   startPosition;
-    public Vector3f   endPosition;
-    public Quaternion startRotation;
-    public Quaternion endRotation;
-    public Quaternion currentRotation;
+    public EntityInfo  info;
+    public boolean     initialized;
+    public Spatial     visible;
+    public float       posLerp;
+    public float       rotLerp;
+    public Vector3f    startPosition;
+    public Vector3f    endPosition;
+    public Quaternion  startRotation;
+    public Quaternion  endRotation;
+    public Quaternion  currentRotation;
 
     // floating effect
     public float floatTime = 0f;
 
-    public ClientEntity(Entity entity, Spatial node, Spatial visible) {
+    public ClientEntity(EntityInfo info, Spatial node, Spatial visible) {
         super();
-        this.entity = entity;
+        this.info = info;
         this.visible = visible;
         endPosition = new Vector3f(node.getLocalTranslation());
         endRotation = new Quaternion(node.getLocalRotation());
@@ -54,13 +56,13 @@ public class ClientEntity extends AbstractControl {
             if (rotLerp > cl_lerp)
                 rotLerp = -1f;
         }
-        if ((entity.effects & Constants.Effects.ROTATE_X) > 0)
+        if ((info.effects & Constants.Effects.ROTATE_X) > 0)
             visible.rotate(tpf * 5, 0f, 0f);
-        if ((entity.effects & Constants.Effects.ROTATE_Y) > 0)
+        if ((info.effects & Constants.Effects.ROTATE_Y) > 0)
             visible.rotate(0f, tpf * 5, 0f);
-        if ((entity.effects & Constants.Effects.ROTATE_Z) > 0)
+        if ((info.effects & Constants.Effects.ROTATE_Z) > 0)
             visible.rotate(0f, 0f, tpf * 5);
-        if ((entity.effects & Constants.Effects.FLOATING) > 0) {
+        if ((info.effects & Constants.Effects.FLOATING) > 0) {
             floatTime += tpf;
             // assuming visible.localTranslation == 0
             Vector3f newLocation = new Vector3f(0f, cl_float_offset * FastMath.sin(5f * floatTime), 0f);

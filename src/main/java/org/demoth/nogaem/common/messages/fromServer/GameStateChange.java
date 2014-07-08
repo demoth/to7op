@@ -2,7 +2,7 @@ package org.demoth.nogaem.common.messages.fromServer;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
 
 import java.util.*;
 
@@ -11,16 +11,17 @@ import java.util.*;
  */
 @Serializable
 public class GameStateChange extends AbstractMessage {
-    public long                    index;
-    public Collection<EntityState> changes;
-    public Map<Integer, Entity>      added;
-    public Collection<Integer>     removedIds;
+    public long                     index;
+    public Collection<EntityState>  changes;
+    public Map<Integer, EntityInfo> added;
+    public Collection<Integer>      removedIds;
 
     public GameStateChange() {
     }
 
-    public GameStateChange(Map<Integer, Entity> entities) {
+    public GameStateChange(Map<Integer, EntityInfo> entities, Collection<EntityState> changes) {
         this.added = entities;
+        this.changes = changes;
     }
 
     @Override

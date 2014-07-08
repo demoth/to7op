@@ -4,16 +4,13 @@ import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.*;
 import com.jme3.network.serializing.*;
 import com.jme3.scene.plugins.blender.BlenderModelLoader;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
 import org.demoth.nogaem.common.messages.*;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
-import org.demoth.nogaem.server.Player;
 import org.slf4j.*;
 
-import java.io.File;
 import java.nio.file.*;
-import java.util.Arrays;
 
 import static org.demoth.nogaem.common.Config.gamedir;
 
@@ -46,7 +43,7 @@ public class Util {
         Serializer.registerClass(Acknowledgement.class);
         Serializer.registerClass(ActionMessage.class);
         Serializer.registerClass(LoginRequestMessage.class);
-        Serializer.registerClass(Entity.class);
+        Serializer.registerClass(EntityInfo.class);
         Serializer.registerClass(RconMessage.class);
 
         Serializer.registerClass(AddedEntities.class);

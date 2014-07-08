@@ -1,6 +1,7 @@
 package org.demoth.nogaem.server;
 
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.messages.fromServer.EntityState;
 
 import java.util.function.Consumer;
 
@@ -8,11 +9,27 @@ import java.util.function.Consumer;
  * @author demoth
  */
 public class ServerEntity {
-    public Entity          entity;
+    // static entity information
+    public EntityInfo      info;
+    // dynamic entity information
+    public EntityState     state;
+    // update function
     public Consumer<Float> update;
 
-    public ServerEntity(Entity entity, Consumer<Float> update) {
-        this.entity = entity;
+    public float time;
+
+    public ServerEntity(EntityInfo info, EntityState state, Consumer<Float> update) {
+        this.info = info;
+        this.state = state;
         this.update = update;
     }
+
+    public ServerEntity(EntityInfo info, EntityState state) {
+        this.info = info;
+        this.state = state;
+    }
+
+    public ServerEntity() {
+    }
+
 }

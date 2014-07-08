@@ -19,7 +19,7 @@ import org.demoth.nogaem.client.gui.*;
 import org.demoth.nogaem.client.states.IngameState;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.Entity;
+import org.demoth.nogaem.common.entities.EntityInfo;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
@@ -39,7 +39,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private final        Map<Integer, ClientEntity>     entities = new HashMap<>();
     Client net;
     volatile long buttons;
-    private  int  myId;
+    private int  myId;
     private long     sentButtons   = 0;
     private Vector3f sentDirection = new Vector3f();
     // interpolation
@@ -149,29 +149,31 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     }
 
     // update
-    private void addEntity(Integer id, Entity entity) {
-        log.trace("Adding " + entity);
+    private void addEntity(Integer id, EntityInfo entityInfo) {
+        log.info("Adding " + entityInfo);
         if (id == myId || entities.containsKey(id))
             return;
-        Node node = new Node(entity.name);
+        Node node = new Node(entityInfo.name);
         Spatial model;
-        switch (entity.modelName) {
-            case "player":
+        float size;
+        switch (entityInfo.typeId) {
+            case 1:
                 model = assetManager.loadModel("models/player.blend");
                 model.move(0f, -g_player_height / 2, 0f);
+                size = 5f;
                 break;
-            case "axe":
+            case 2:
             default:
                 model = assetManager.loadModel("models/axe.blend");
+                size = 1f;
         }
-        float size = entity.size;
-        Geometry bounds = new Geometry(entity.name + "BB", new Box(size, size, size));
+        Geometry bounds = new Geometry(entityInfo.name + "BB", new Box(size, size, size));
         bounds.setMaterial(createBoundBoxMaterial());
         node.attachChild(model);
         node.attachChild(bounds);
         Node textNode = new Node();
         BitmapText text = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
-        text.setText(entity.name);
+        text.setText(entityInfo.name);
         text.setSize(1f);
         text.move(-text.getLineWidth() / 2, size + text.getLineHeight(), 0f);
         textNode.attachChild(text);
@@ -179,11 +181,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         node.attachChild(textNode);
         attachCoordinateAxes(node);
 
-        if (entity.state != null) {
-            node.setLocalTranslation(entity.state.pos);
-            node.setLocalRotation(entity.state.rot);
-        }
-        entities.put(id, new ClientEntity(entity, node, model));
+        entities.put(id, new ClientEntity(entityInfo, node, model));
         rootNode.attachChild(node);
     }
 
@@ -203,7 +201,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
             return;
         rootNode.detachChild(sp);
         entities.remove(id);
-        log.info("Removed entity " + id);
+        log.info("Removed info " + id);
     }
 
     // update
@@ -220,19 +218,26 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
             message.added.forEach(this::addEntity);
         if (message.changes != null) {
             message.changes.forEach(change -> {
+                log.trace("Moving: {0}", change);
                 if (change.id == myId) {
                     startPosition = new Vector3f(cam.getLocation());
                     endPosition = change.pos.add(0f, g_player_height / 2, 0f);
                     camLerp = 0f;
                 } else {
-                    ClientEntity contol = entities.get(change.id);
-                    if (contol != null) {
-                        if (change.rot != null && !change.rot.equals(contol.endRotation)) {
-                            contol.rotateLerp(change.rot);
+                    ClientEntity control = entities.get(change.id);
+                    if (control != null) {
+                        if (!control.initialized) {
+                            control.getSpatial().setLocalTranslation(change.pos);
+                            control.getSpatial().setLocalRotation(change.rot);
+                            control.initialized = true;
+                        } else {
+                            if (change.rot != null && !change.rot.equals(control.endRotation))
+                                control.rotateLerp(change.rot);
+                            if (change.pos != null && !change.pos.equals(control.endPosition))
+                                control.moveLerp(change.pos);
                         }
-                        if (change.pos != null && !change.pos.equals(contol.endPosition)) {
-                            contol.moveLerp(change.pos);
-                        }
+                    } else {
+                        log.warn("No control found for " + change.id);
                     }
                 }
             });
@@ -348,6 +353,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private void resetClient() {
         lastReceivedMessage = 0;
         stopSendingUpdates();
+        entities.clear();
         cam.setLocation(new Vector3f());
         camLerp = -1;
         startPosition = new Vector3f();
