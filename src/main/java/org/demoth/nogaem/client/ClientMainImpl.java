@@ -2,6 +2,7 @@ package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
+import com.jme3.audio.AudioNode;
 import com.jme3.font.BitmapText;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
@@ -151,11 +152,11 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     }
 
     // update
-    private void addEntity(Integer id, EntityInfo entityInfo) {
+    private void addEntity(Integer id, EntityInfo entityInfo, boolean playSounds) {
         log.info("Adding " + entityInfo);
         if (id == myId || entities.containsKey(id))
             return;
-        entities.put(id, entityFactory.createClientEntity(entityInfo));
+        entities.put(id, entityFactory.createClientEntity(entityInfo, playSounds));
     }
 
     private void removeEntity(int id) {
@@ -180,8 +181,10 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         net.send(new Acknowledgement(message.index));
         if (message.removedIds != null)
             message.removedIds.forEach(this::removeEntity);
-        if (message.added != null)
-            message.added.forEach(this::addEntity);
+        if (message.added != null) {
+            boolean playSounds = entities.size() != 0;
+            message.added.forEach((t, u) -> addEntity(t, u, playSounds));
+        }
         if (message.changes != null) {
             message.changes.forEach(change -> {
                 log.trace("Moving: {0}", change);
@@ -385,11 +388,16 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         Spatial sceneModel = assetManager.loadModel("maps/" + mapName);
         sceneModel.setLocalScale(g_scale);
         rootNode.attachChild(sceneModel);
-        net.send(new Acknowledgement(-1));
         Util.attachCoordinateAxes(rootNode, assetManager);
         stateManager.attach(ingameState);
         screenController.resume();
+        AudioNode audio = new AudioNode(assetManager, "sounds/fins-teleport.wav");
+        audio.setLooping(false);
+        audio.setPositional(false);
+        rootNode.attachChild(audio);
+        audio.play();
         startSendingUpdates();
+        net.send(new Acknowledgement(-1));
     }
 
     private void sendRequests() {

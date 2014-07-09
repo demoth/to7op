@@ -29,7 +29,7 @@ public class EntityFactory {
         this.detailedInfoMap = Util.parseCsv(gamedir + "/entities.csv");
     }
 
-    public ClientEntity createClientEntity(EntityInfo info) {
+    public ClientEntity createClientEntity(EntityInfo info, boolean playSounds) {
         Node node = new Node(info.name);
         EntityDetailedInfo detailedInfo = detailedInfoMap.get(info.typeId);
         if (detailedInfo == null) {
@@ -55,12 +55,14 @@ public class EntityFactory {
         textNode.addControl(new BillboardControl());
         node.attachChild(textNode);
 
-        // audio
-        AudioNode audio = new AudioNode(assetManager, "sounds/" + detailedInfo.appearSound);
-        audio.setPositional(true);
-        audio.setLooping(false);
-        node.attachChild(audio);
-        audio.play();
+        if (playSounds) {
+            // audio
+            AudioNode audio = new AudioNode(assetManager, "sounds/" + detailedInfo.appearSound);
+            audio.setPositional(true);
+            audio.setLooping(false);
+            node.attachChild(audio);
+            audio.play();
+        }
         // coordinate axes
         Util.attachCoordinateAxes(node, assetManager);
 
