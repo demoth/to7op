@@ -1,6 +1,7 @@
 package org.demoth.nogaem.common.entities;
 
 import com.jme3.asset.AssetManager;
+import com.jme3.audio.AudioNode;
 import com.jme3.font.BitmapText;
 import com.jme3.scene.*;
 import com.jme3.scene.control.BillboardControl;
@@ -9,10 +10,8 @@ import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.common.Util;
 import org.slf4j.*;
 
-import java.io.File;
 import java.util.Map;
 
-import static org.demoth.nogaem.common.Config.g_player_height;
 import static org.demoth.nogaem.common.Config.gamedir;
 
 /**
@@ -20,8 +19,8 @@ import static org.demoth.nogaem.common.Config.gamedir;
  */
 public class EntityFactory {
     static final Logger log = LoggerFactory.getLogger(EntityFactory.class);
-    private AssetManager assetManager;
-    private Node         rootNode;
+    private AssetManager                     assetManager;
+    private Node                             rootNode;
     private Map<Integer, EntityDetailedInfo> detailedInfoMap;
 
     public EntityFactory(AssetManager assetManager, Node rootNode) {
@@ -37,11 +36,16 @@ public class EntityFactory {
             log.error("Detailed info for typeId:" + info.typeId + " not found");
             return null;
         }
+        // visual representation
         Spatial model = assetManager.loadModel("models/" + detailedInfo.modelName);
+        node.attachChild(model);
+
+        // bounding box
         Geometry bounds = new Geometry(info.name + "BB", new Box(detailedInfo.size, detailedInfo.size, detailedInfo.size));
         bounds.setMaterial(Util.createBoundBoxMaterial(assetManager));
-        node.attachChild(model);
         node.attachChild(bounds);
+
+        // textual information
         Node textNode = new Node();
         BitmapText text = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"));
         text.setText(info.name);
@@ -50,7 +54,16 @@ public class EntityFactory {
         textNode.attachChild(text);
         textNode.addControl(new BillboardControl());
         node.attachChild(textNode);
+
+        // audio
+        AudioNode audio = new AudioNode(assetManager, "sounds/" + detailedInfo.appearSound);
+        audio.setPositional(true);
+        audio.setLooping(false);
+        node.attachChild(audio);
+        audio.play();
+        // coordinate axes
         Util.attachCoordinateAxes(node, assetManager);
+
         rootNode.attachChild(node);
         return new ClientEntity(info, node, model);
     }

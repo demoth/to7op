@@ -5,6 +5,7 @@ package org.demoth.nogaem.common.entities;
  */
 public class EntityDetailedInfo {
     public int typeId;
-    public String modelName;
     public float size;
+    public String modelName;
+    public String appearSound;
 }

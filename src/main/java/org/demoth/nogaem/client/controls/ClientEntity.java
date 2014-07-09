@@ -1,5 +1,6 @@
 package org.demoth.nogaem.client.controls;
 
+import com.jme3.audio.AudioNode;
 import com.jme3.math.*;
 import com.jme3.renderer.*;
 import com.jme3.scene.Spatial;
