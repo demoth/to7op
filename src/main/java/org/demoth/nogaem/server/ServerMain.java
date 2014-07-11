@@ -41,6 +41,7 @@ public class ServerMain extends SimpleApplication {
     Thread            sender;
     long              frameIndex;
     private int lastId = 10000;
+    boolean hit;
 
     public static void run() {
         new ServerMain().start(JmeContext.Type.Headless);
@@ -128,6 +129,7 @@ public class ServerMain extends SimpleApplication {
                 log.info(player.info.name + " is hit!");
                 removeEntity(missile.info.id, missileControl);
                 player.hp = -5f;
+                hit = true;
             }
         }
     }
@@ -178,11 +180,13 @@ public class ServerMain extends SimpleApplication {
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
         removedIds.clear();
+        hit = false;
     }
 
     private GameStateChange calculateChanges(Player pl) {
         //log.info("player " + pl.id + " has " + pl.notConfirmedMessages.size() + " non confirmes msgs.");
         GameStateChange msg = new GameStateChange(pl.axeQuantity);
+        msg.hitSound = hit;
         msg.index = frameIndex;
         msg.added = new HashMap<>();
         addedEntities.forEach(e -> msg.added.put(e.id, e));

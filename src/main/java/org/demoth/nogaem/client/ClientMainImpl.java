@@ -49,6 +49,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private ClientScreenController screenController;
     private IngameState            ingameState;
     private EntityFactory          entityFactory;
+    private AudioNode              hitSound;
 
     public static void run() {
         new ClientMainImpl().start(JmeContext.Type.Display);
@@ -84,8 +85,12 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         });
         screenController = Screens.createController(assetManager, inputManager, audioRenderer, guiViewPort, this);
         screenController.showMainMenu();
-        entityFactory = new EntityFactory(assetManager, rootNode);
         log.info("GUI initialized");
+        entityFactory = new EntityFactory(assetManager, rootNode);
+        hitSound = new AudioNode(assetManager, "sounds/ekokubza123-punch.ogg");
+        hitSound.setLooping(false);
+        hitSound.setPositional(false);
+
 //        if (!host.isEmpty())
 //            connect();
     }
@@ -168,13 +173,15 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
 
     // update
     private void processResponse(GameStateChange message) {
-        screenController.setAxesQuantity(message.axeQuantity);
         if (message.index < lastReceivedMessage) {
             log.info("skipping obsolete message");
             return;
         }
         lastReceivedMessage = message.index;
         net.send(new Acknowledgement(message.index));
+        screenController.setAxesQuantity(message.axeQuantity);
+        if (message.hitSound)
+            hitSound.playInstance();
         if (message.removedIds != null)
             message.removedIds.forEach(this::removeEntity);
         if (message.added != null) {

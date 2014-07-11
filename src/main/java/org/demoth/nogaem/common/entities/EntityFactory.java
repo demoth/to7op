@@ -12,6 +12,7 @@ import org.slf4j.*;
 
 import java.util.Map;
 
+import static org.demoth.nogaem.common.Config.debug;
 import static org.demoth.nogaem.common.Config.gamedir;
 
 /**
@@ -40,10 +41,16 @@ public class EntityFactory {
         Spatial model = assetManager.loadModel("models/" + detailedInfo.modelName);
         node.attachChild(model);
 
-        // bounding box
-        Geometry bounds = new Geometry(info.name + "BB", new Box(detailedInfo.size, detailedInfo.size, detailedInfo.size));
-        bounds.setMaterial(Util.createBoundBoxMaterial(assetManager));
-        node.attachChild(bounds);
+        if (debug == 1) {
+            // bounding box
+            Geometry bounds = new Geometry(info.name + "BB", new Box(detailedInfo.size, detailedInfo.size, detailedInfo.size));
+            bounds.setMaterial(Util.createBoundBoxMaterial(assetManager));
+            node.attachChild(bounds);
+
+            // coordinate axes
+            Util.attachCoordinateAxes(node, assetManager);
+
+        }
 
         // textual information
         Node textNode = new Node();
@@ -61,10 +68,8 @@ public class EntityFactory {
             audio.setPositional(true);
             audio.setLooping(false);
             node.attachChild(audio);
-            audio.play();
+            audio.playInstance();
         }
-        // coordinate axes
-        Util.attachCoordinateAxes(node, assetManager);
 
         rootNode.attachChild(node);
         return new ClientEntity(info, node, model);

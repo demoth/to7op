@@ -15,6 +15,7 @@ public class GameStateChange extends AbstractMessage {
     public Collection<EntityState>  changes;
     public Map<Integer, EntityInfo> added;
     public Collection<Integer>      removedIds;
+    public boolean                  hitSound;
 
     // debug
     public int axeQuantity;
