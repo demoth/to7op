@@ -6,7 +6,7 @@ import com.jme3.input.InputManager;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.renderer.ViewPort;
 import de.lessvoid.nifty.Nifty;
-import org.demoth.nogaem.client.*;
+import org.demoth.nogaem.client.ClientMain;
 
 /**
  * @author demoth

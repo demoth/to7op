@@ -3,7 +3,7 @@ package org.demoth.nogaem.client.states;
 import com.jme3.app.state.*;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
-import org.demoth.nogaem.client.*;
+import org.demoth.nogaem.client.ClientMain;
 import org.slf4j.*;
 
 import static org.demoth.nogaem.common.Constants.Actions.*;

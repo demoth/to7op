@@ -3,12 +3,13 @@ package org.demoth.nogaem.server;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.shapes.*;
 import com.jme3.bullet.control.*;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.scene.Spatial;
+import com.jme3.scene.*;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.common.*;
 import org.demoth.nogaem.common.entities.*;
@@ -85,9 +86,10 @@ public class ServerMain extends SimpleApplication {
         if (mapName.isEmpty())
             return;
         bulletAppState = new BulletAppState();
+        stateManager.attach(bulletAppState);
+        bulletAppState.getPhysicsSpace().addCollisionListener(this::collide);
         updatingState = new UpdatingGameState();
         stateManager.attach(updatingState);
-        stateManager.attach(bulletAppState);
         Spatial sceneModel = assetManager.loadModel("maps/" + mapName);
         sceneModel.setLocalScale(g_scale);
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
@@ -95,10 +97,38 @@ public class ServerMain extends SimpleApplication {
         sceneModel.addControl(landscapeControl);
         bulletAppState.getPhysicsSpace().add(landscapeControl);
         players.values().forEach(p -> {
-            p.physics = createPlayerPhysics();
+            p.physics = createPlayerPhysics(p.info.id);
             bulletAppState.getPhysicsSpace().add(p.physics);
         });
         startSendingUpdates();
+    }
+
+    private void collide(PhysicsCollisionEvent e) {
+        Spatial nodeA = e.getNodeA();
+        Spatial nodeB = e.getNodeB();
+        if (nodeA != null && nodeB != null) {
+            if (nodeA.getName().equals("maps/box.blend") || nodeB.getName().equals("maps/box.blend"))
+                return;
+            Player player = null;
+            ServerEntity missile = null;
+            RigidBodyControl missileControl = null;
+            if (nodeA.getName().equals("player"))
+                player = players.get(nodeA.<Integer>getUserData("id"));
+            if (nodeB.getName().equals("player"))
+                player = players.get(nodeB.<Integer>getUserData("id"));
+            if (nodeA.getName().equals("missile")) {
+                missile = entities.get(nodeA.<Integer>getUserData("id"));
+                missileControl = (RigidBodyControl) e.getObjectA();
+            }
+            if (nodeB.getName().equals("missile")) {
+                missile = entities.get(nodeB.<Integer>getUserData("id"));
+                missileControl = (RigidBodyControl) e.getObjectB();
+            }
+            if (player != null && missile != null) {
+                log.info(player.info.name + " is hit!");
+                removeEntity(missile.info.id, missileControl);
+            }
+        }
     }
 
     @Override
@@ -227,7 +257,7 @@ public class ServerMain extends SimpleApplication {
             conn.close("Player with login " + msg.login + " is already in game");
             return;
         }
-        Player player = new Player(conn, msg.login, createPlayerPhysics());
+        Player player = new Player(conn, msg.login, createPlayerPhysics(conn.getId()));
         server.broadcast(in(conn), new JoinedGameMessage(player.info.id, map));
         if (map.isEmpty())
             return;
@@ -245,13 +275,16 @@ public class ServerMain extends SimpleApplication {
         addedEntities.add(player.info);
     }
 
-    private CharacterControl createPlayerPhysics() {
+    private CharacterControl createPlayerPhysics(int id) {
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(g_player_radius, g_player_height, g_player_axis);
         CharacterControl control = new CharacterControl(capsuleShape, g_player_step);
         control.setJumpSpeed(g_player_jumpheight);
         control.setFallSpeed(g_player_fallspeed);
         control.setGravity(g_player_gravity);
         control.setPhysicsLocation(g_spawn_point);
+        Node node = new Node("player");
+        node.setUserData("id", id);
+        control.setSpatial(node);
         return control;
     }
 
@@ -315,22 +348,34 @@ public class ServerMain extends SimpleApplication {
                 break;
         }
         EntityInfo axeInfo = new EntityInfo(id, 2, name, effects);
-        ServerEntity axe = new ServerEntity(axeInfo, new EntityState(id, rot, pos));
-        float ttl = 30f;
+        Vector3f position = new Vector3f(pos.add(dir.mult(4f)));
+        ServerEntity axe = new ServerEntity(axeInfo, new EntityState(id, rot, position));
+        RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(new Vector3f(0.5f, 0.5f, 0.5f)), 2f);
+        control.setPhysicsLocation(position);
+        control.setLinearVelocity(dir.mult(50f));
+        Node missile = new Node("missile");
+        missile.setLocalTranslation(position);
+        missile.setUserData("id", id);
+        control.setSpatial(missile);
+        bulletAppState.getPhysicsSpace().add(control);
+        float ttl = 10f;
         axe.update = tpf -> {
             if (axe.time > ttl)
-                removeEntity(axeInfo.id);
+                removeEntity(axeInfo.id, control);
             axe.time += tpf;
-            //axe.state.pos = axe.state.pos.add(dir.mult(tpf * 20));
+            axe.state.pos = new Vector3f(control.getPhysicsLocation());
+            axe.state.rot = new Quaternion(control.getPhysicsRotation());
+            log.info("axe " + axeInfo.id + " position " + axe.state.pos);
         };
         entities.put(id, axe);
         addedEntities.add(axeInfo);
     }
 
-    private void removeEntity(int id) {
+    private void removeEntity(int id, RigidBodyControl control) {
         entities.remove(id);
         players.remove(id);
         removedIds.add(id);
+        bulletAppState.getPhysicsSpace().remove(control);
     }
 
     private void execCommand(HostedConnection conn, Message message) {

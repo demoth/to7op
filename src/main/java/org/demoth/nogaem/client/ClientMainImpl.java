@@ -3,17 +3,12 @@ package org.demoth.nogaem.client;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.audio.AudioNode;
-import com.jme3.font.BitmapText;
-import com.jme3.input.*;
+import com.jme3.input.KeyInput;
 import com.jme3.input.controls.*;
 import com.jme3.light.*;
-import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.network.*;
-import com.jme3.scene.*;
-import com.jme3.scene.control.BillboardControl;
-import com.jme3.scene.debug.Arrow;
-import com.jme3.scene.shape.Box;
+import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
 import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.client.gui.*;
@@ -28,7 +23,7 @@ import org.slf4j.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.demoth.nogaem.common.Config.*;
 import static org.demoth.nogaem.common.Constants.Actions.*;

@@ -4,7 +4,7 @@ import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.*;
 import com.jme3.network.HostedConnection;
 import org.demoth.nogaem.common.entities.*;
-import org.demoth.nogaem.common.messages.fromServer.*;
+import org.demoth.nogaem.common.messages.fromServer.GameStateChange;
 
 import java.util.*;
 
@@ -22,7 +22,7 @@ public class Player {
     public EntityState state;
 
     // debug
-    public int projectileEffect;
+    public int projectileEffect = 2;
 
     public Player(HostedConnection conn, String name, CharacterControl physics) {
         info = new EntityInfo(conn.getId(), 1, name, 0);

@@ -4,7 +4,7 @@ import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.controls.button.ButtonControl;
 import de.lessvoid.nifty.controls.textfield.TextFieldControl;
 import de.lessvoid.nifty.screen.*;
-import org.demoth.nogaem.client.*;
+import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
 
 /**

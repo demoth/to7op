@@ -1,15 +1,13 @@
 package org.demoth.nogaem.client.controls;
 
-import com.jme3.audio.AudioNode;
 import com.jme3.math.*;
 import com.jme3.renderer.*;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.AbstractControl;
-import org.demoth.nogaem.common.*;
+import org.demoth.nogaem.common.Constants;
 import org.demoth.nogaem.common.entities.EntityInfo;
 
-import static org.demoth.nogaem.common.Config.cl_float_offset;
-import static org.demoth.nogaem.common.Config.cl_lerp;
+import static org.demoth.nogaem.common.Config.*;
 
 /**
  * @author demoth
