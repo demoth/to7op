@@ -168,6 +168,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
 
     // update
     private void processResponse(GameStateChange message) {
+        screenController.setAxesQuantity(message.axeQuantity);
         if (message.index < lastReceivedMessage) {
             log.info("skipping obsolete message");
             return;

@@ -80,8 +80,10 @@
         </layer>
     </screen>
     <screen id="hud" controller="org.demoth.nogaem.client.gui.ClientScreenController">
-        <layer childLayout="center" width="10%" height="10%" align="right" valign="top">
-            <text font="Interface/Fonts/Default.fnt" width="50%" text="HUD"/>
+        <layer childLayout="center" width="50%" height="100%" align="center" valign="center">
+                <!--<text font="Interface/Fonts/Default.fnt" width="50%" text="+"/>-->
+                <text font="Interface/Fonts/Default.fnt" text="+" valign="center"/>
+                <text id="ammoText" font="Interface/Fonts/Default.fnt" text="" valign="bottom"/>
         </layer>
     </screen>
 </nifty>

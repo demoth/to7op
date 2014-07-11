@@ -127,6 +127,7 @@ public class ServerMain extends SimpleApplication {
             if (player != null && missile != null) {
                 log.info(player.info.name + " is hit!");
                 removeEntity(missile.info.id, missileControl);
+                player.hp = -5f;
             }
         }
     }
@@ -181,7 +182,7 @@ public class ServerMain extends SimpleApplication {
 
     private GameStateChange calculateChanges(Player pl) {
         //log.info("player " + pl.id + " has " + pl.notConfirmedMessages.size() + " non confirmes msgs.");
-        GameStateChange msg = new GameStateChange();
+        GameStateChange msg = new GameStateChange(pl.axeQuantity);
         msg.index = frameIndex;
         msg.added = new HashMap<>();
         addedEntities.forEach(e -> msg.added.put(e.id, e));
@@ -270,7 +271,19 @@ public class ServerMain extends SimpleApplication {
         });
         player.notConfirmedMessages.add(new GameStateChange(newEntities, changes));
         bulletAppState.getPhysicsSpace().add(player.physics);
-        entities.put(conn.getId(), new ServerEntity(player.info, player.state, tpf -> player.state.pos = player.physics.getPhysicsLocation()));
+        entities.put(conn.getId(), new ServerEntity(player.info, player.state, tpf -> {
+            player.state.pos = player.physics.getPhysicsLocation();
+            if (player.hp > 0) {
+                player.axeCooldown += tpf;
+                if (player.axeQuantity < 3 && player.axeCooldown > 10f) {
+                    player.axeQuantity++;
+                    player.axeCooldown = 0f;
+                }
+            } else {
+                player.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
+            }
+            player.hp += tpf;
+        }));
         players.put(conn.getId(), player);
         addedEntities.add(player.info);
     }
@@ -293,61 +306,37 @@ public class ServerMain extends SimpleApplication {
         Player player = players.get(request.playerId);
         if (player == null || !player.isReady)
             return;
-        float isWalking = 0f;
-        float isStrafing = 0f;
-        if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
-            isWalking = 1f;
-        else if (pressed(request.buttons, Constants.Masks.WALK_BACKWARD))
-            isWalking = -1f;
-        if (pressed(request.buttons, Constants.Masks.STRAFE_LEFT))
-            isStrafing = -1f;
-        else if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
-            isStrafing = 1f;
-        if (pressed(request.buttons, Constants.Masks.JUMP))
-            player.physics.jump();
-        if (pressed(request.buttons, Constants.Masks.FIRE_SECONDARY))
-            player.projectileEffect++;
-        if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY))
-            createProjectile(player.state.rot, player.state.pos, player.projectileEffect, request.dir);
-        request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
-        Vector3f left = request.dir.cross(up).multLocal(isStrafing);
-        Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
-        player.state.rot = request.rot;
-        player.physics.setWalkDirection(walkDirection.normalize());
+        if (player.hp > 0f) {
+            float isWalking = 0f;
+            float isStrafing = 0f;
+            if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
+                isWalking = 1f;
+            else if (pressed(request.buttons, Constants.Masks.WALK_BACKWARD))
+                isWalking = -1f;
+            if (pressed(request.buttons, Constants.Masks.STRAFE_LEFT))
+                isStrafing = -1f;
+            else if (pressed(request.buttons, Constants.Masks.STRAFE_RIGHT))
+                isStrafing = 1f;
+            if (pressed(request.buttons, Constants.Masks.JUMP))
+                player.physics.jump();
+            if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)) {
+                if (player.axeCooldown > 0 && player.axeQuantity > 0) {
+                    createProjectile(player.state.rot, player.state.pos, request.dir);
+                    player.axeCooldown = -1f;
+                    player.axeQuantity--;
+                }
+            }
+            request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
+            Vector3f left = request.dir.cross(up).multLocal(isStrafing);
+            Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
+            player.state.rot = request.rot;
+            player.physics.setWalkDirection(walkDirection.normalize());
+        }
     }
 
-    private void createProjectile(Quaternion rot, Vector3f pos, int projectileEffect, Vector3f dir) {
+    private void createProjectile(Quaternion rot, Vector3f pos, Vector3f dir) {
         int id = ++lastId;
-        String name;
-        long effects;
-        switch (projectileEffect % 6) {
-            case 0:
-            default:
-                name = "none";
-                effects = 0;
-                break;
-            case 1:
-                name = "floating";
-                effects = Constants.Effects.FLOATING;
-                break;
-            case 2:
-                name = "rotate_x";
-                effects = Constants.Effects.ROTATE_X;
-                break;
-            case 3:
-                name = "rotate_y";
-                effects = Constants.Effects.ROTATE_Y;
-                break;
-            case 4:
-                name = "rotate_z";
-                effects = Constants.Effects.ROTATE_Z;
-                break;
-            case 5:
-                name = "rotate_y+float";
-                effects = Constants.Effects.ROTATE_Y | Constants.Effects.FLOATING;
-                break;
-        }
-        EntityInfo axeInfo = new EntityInfo(id, 2, name, effects);
+        EntityInfo axeInfo = new EntityInfo(id, 2, "axe", 2);
         Vector3f position = new Vector3f(pos.add(dir.mult(4f)));
         ServerEntity axe = new ServerEntity(axeInfo, new EntityState(id, rot, position));
         RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(new Vector3f(0.5f, 0.5f, 0.5f)), 2f);
@@ -365,7 +354,6 @@ public class ServerMain extends SimpleApplication {
             axe.time += tpf;
             axe.state.pos = new Vector3f(control.getPhysicsLocation());
             axe.state.rot = new Quaternion(control.getPhysicsRotation());
-            log.info("axe " + axeInfo.id + " position " + axe.state.pos);
         };
         entities.put(id, axe);
         addedEntities.add(axeInfo);

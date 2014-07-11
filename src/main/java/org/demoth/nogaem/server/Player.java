@@ -22,7 +22,9 @@ public class Player {
     public EntityState state;
 
     // debug
-    public int projectileEffect = 2;
+    public float axeCooldown = 0f;
+    public int axeQuantity = 3;
+    public float hp = 1;
 
     public Player(HostedConnection conn, String name, CharacterControl physics) {
         info = new EntityInfo(conn.getId(), 1, name, 0);

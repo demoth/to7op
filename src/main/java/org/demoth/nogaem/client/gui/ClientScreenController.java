@@ -3,6 +3,7 @@ package org.demoth.nogaem.client.gui;
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.controls.button.ButtonControl;
 import de.lessvoid.nifty.controls.textfield.TextFieldControl;
+import de.lessvoid.nifty.elements.render.TextRenderer;
 import de.lessvoid.nifty.screen.*;
 import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
@@ -103,5 +104,9 @@ public class ClientScreenController implements ScreenController {
         resumeButton.setEnabled(client.isConnected());
         ButtonControl disconnectButton = nifty.getScreen("mainmenuScreen").findControl("disconnectButton", ButtonControl.class);
         disconnectButton.setEnabled(client.isConnected());
+    }
+
+    public void setAxesQuantity(int axeQuantity) {
+        nifty.getScreen("hud").findElementByName("ammoText").getRenderer(TextRenderer.class).setText("AMMO:" + axeQuantity);
     }
 }

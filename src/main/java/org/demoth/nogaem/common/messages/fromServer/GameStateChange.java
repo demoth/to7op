@@ -16,7 +16,14 @@ public class GameStateChange extends AbstractMessage {
     public Map<Integer, EntityInfo> added;
     public Collection<Integer>      removedIds;
 
+    // debug
+    public int axeQuantity;
+
     public GameStateChange() {
+    }
+
+    public GameStateChange(int axeQuantity) {
+        this.axeQuantity = axeQuantity;
     }
 
     public GameStateChange(Map<Integer, EntityInfo> entities, Collection<EntityState> changes) {
