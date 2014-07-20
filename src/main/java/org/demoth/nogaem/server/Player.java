@@ -23,16 +23,12 @@ public class Player {
 
     // debug
     public float axeCooldown = 0f;
-    public int axeQuantity = 3;
-    public float hp = 1;
+    public int   axeQuantity = 3;
+    public float hp          = 1;
 
-    public Player(HostedConnection conn, String name, CharacterControl physics) {
+    public Player(HostedConnection conn, String name) {
         info = new EntityInfo(conn.getId(), 1, name, 0);
         state = new EntityState(conn.getId(), new Quaternion(), new Vector3f());
         this.conn = conn;
-        this.physics = physics;
-    }
-
-    public Player() {
     }
 }

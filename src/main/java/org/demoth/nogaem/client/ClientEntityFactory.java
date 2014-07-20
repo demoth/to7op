@@ -1,4 +1,4 @@
-package org.demoth.nogaem.common.entities;
+package org.demoth.nogaem.client;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioNode;
@@ -8,6 +8,7 @@ import com.jme3.scene.control.BillboardControl;
 import com.jme3.scene.shape.Box;
 import org.demoth.nogaem.client.controls.ClientEntity;
 import org.demoth.nogaem.common.Util;
+import org.demoth.nogaem.common.entities.*;
 import org.slf4j.*;
 
 import java.util.Map;
@@ -18,13 +19,13 @@ import static org.demoth.nogaem.common.Config.gamedir;
 /**
  * @author demoth
  */
-public class EntityFactory {
-    static final Logger log = LoggerFactory.getLogger(EntityFactory.class);
+public class ClientEntityFactory {
+    static final Logger log = LoggerFactory.getLogger(ClientEntityFactory.class);
     private AssetManager                     assetManager;
     private Node                             rootNode;
     private Map<Integer, EntityDetailedInfo> detailedInfoMap;
 
-    public EntityFactory(AssetManager assetManager, Node rootNode) {
+    public ClientEntityFactory(AssetManager assetManager, Node rootNode) {
         this.assetManager = assetManager;
         this.rootNode = rootNode;
         this.detailedInfoMap = Util.parseCsv(gamedir + "/entities.csv");

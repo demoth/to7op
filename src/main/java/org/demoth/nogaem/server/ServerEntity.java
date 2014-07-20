@@ -1,19 +1,23 @@
 package org.demoth.nogaem.server;
 
+import com.jme3.export.*;
 import org.demoth.nogaem.common.entities.*;
 
-import java.util.function.Consumer;
+import java.io.IOException;
+import java.util.function.*;
 
 /**
  * @author demoth
  */
-public class ServerEntity {
+public class ServerEntity implements Savable {
     // static entity information
-    public EntityInfo      info;
+    public EntityInfo             info;
     // dynamic entity information
-    public EntityState     state;
+    public EntityState            state;
     // update function
-    public Consumer<Float> update;
+    public Consumer<Float>        update;
+    // touch function
+    public Consumer<ServerEntity> touch;
 
     public float time;
 
@@ -28,7 +32,13 @@ public class ServerEntity {
         this.state = state;
     }
 
-    public ServerEntity() {
+    @Override
+    public void write(JmeExporter jmeExporter) throws IOException {
+
     }
 
+    @Override
+    public void read(JmeImporter jmeImporter) throws IOException {
+
+    }
 }

@@ -3,7 +3,7 @@ package org.demoth.nogaem;
 import org.apache.commons.cli.*;
 import org.demoth.nogaem.client.ClientMainImpl;
 import org.demoth.nogaem.common.Config;
-import org.demoth.nogaem.server.ServerMain;
+import org.demoth.nogaem.server.*;
 import org.slf4j.*;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -32,7 +32,7 @@ public class App {
             } else if (cmd.hasOption("server")) {
                 Config.loadOrSave("server.cfg");
                 setCvarsFromCmdline(cmd);
-                ServerMain.run();
+                ServerMainImpl.run();
             } else {
                 Config.loadOrSave("client.cfg");
                 setCvarsFromCmdline(cmd);

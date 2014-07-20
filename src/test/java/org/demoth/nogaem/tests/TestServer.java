@@ -1,7 +1,7 @@
 package org.demoth.nogaem.tests;
 
 import com.jme3.system.JmeContext;
-import org.demoth.nogaem.server.ServerMain;
+import org.demoth.nogaem.server.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,7 +28,7 @@ public class TestServer {
     }
 
     private void prepareTest(Consumer<HeadlessClient> c) throws InterruptedException, IOException {
-        new Thread(ServerMain::run).start();
+        new Thread(ServerMainImpl::run).start();
         Thread.sleep(3000);
         HeadlessClient client = new HeadlessClient();
         client.start(JmeContext.Type.Headless);

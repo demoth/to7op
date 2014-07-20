@@ -48,7 +48,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private long                   lastReceivedMessage;
     private ClientScreenController screenController;
     private IngameState            ingameState;
-    private EntityFactory          entityFactory;
+    private ClientEntityFactory    entityFactory;
     private AudioNode              hitSound;
 
     public static void run() {
@@ -86,7 +86,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         screenController = Screens.createController(assetManager, inputManager, audioRenderer, guiViewPort, this);
         screenController.showMainMenu();
         log.info("GUI initialized");
-        entityFactory = new EntityFactory(assetManager, rootNode);
+        entityFactory = new ClientEntityFactory(assetManager, rootNode);
         hitSound = new AudioNode(assetManager, "sounds/ekokubza123-punch.ogg");
         hitSound.setLooping(false);
         hitSound.setPositional(false);
