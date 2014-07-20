@@ -60,8 +60,8 @@ public class ServerEntityFactory {
     }
 
     public ServerEntity createPlayerEntity(Player player) {
-        return new ServerEntity(player.info, player.state, tpf -> {
-            player.state.pos = player.physics.getPhysicsLocation();
+        return new ServerEntity(new EntityInfo(player.conn.getId(), 1, player.name, 0), new EntityState(player.conn.getId()), tpf -> {
+            player.entity.state.pos = player.physics.getPhysicsLocation();
             if (player.hp > 0) {
                 player.axeCooldown += tpf;
                 if (player.axeQuantity < 3 && player.axeCooldown > 10f) {
@@ -69,7 +69,7 @@ public class ServerEntityFactory {
                     player.axeCooldown = 0f;
                 }
             } else {
-                player.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
+                player.entity.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
             }
             player.hp += tpf;
         });

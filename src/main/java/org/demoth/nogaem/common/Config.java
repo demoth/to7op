@@ -21,7 +21,7 @@ public class Config {
     public static        long     sv_sleep            = 100;
     public static        int      sv_drop_after       = 50;
     public static        String   rcon_pass           = "asdf";
-    public static        float    g_scale             = 1f;
+    public static        float    g_scale             = 3f;
     public static        float    g_player_radius     = 1.5f;
     public static        float    g_player_height     = 6f;
     public static        int      g_player_axis       = 1;

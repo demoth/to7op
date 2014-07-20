@@ -26,6 +26,10 @@ public class EntityState {
         this.pos = new Vector3f(position);
     }
 
+    public EntityState(int id) {
+        this(id, new Quaternion(), new Vector3f());
+    }
+
     @Override
     public String toString() {
         return "EntityState{" +

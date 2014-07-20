@@ -100,10 +100,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0f);
         sceneModel.addControl(landscapeControl);
         bulletAppState.getPhysicsSpace().add(landscapeControl);
-        players.values().forEach(p -> {
-//            p.physics = createPlayerPhysics(p.info.id);
-//            bulletAppState.getPhysicsSpace().add(p.physics);
-        });
+        players.values().forEach(p -> bulletAppState.getPhysicsSpace().add(p.createPlayerPhysics()));
         startSendingUpdates();
     }
 
@@ -191,7 +188,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         });
         pl.notConfirmedMessages.add(msg);
         msg.changes = changes;
-        log.trace("Changes for {0} A={1} R={2} C={3}", pl.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
+        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
         return msg;
     }
 
@@ -221,7 +218,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
     }
 
     private void sendChatMsg(HostedConnection conn, Message message) {
-        server.broadcast(new TextMessage(players.get(conn.getId()).info.name + ':' + ((TextMessage) message).text));
+        server.broadcast(new TextMessage(players.get(conn.getId()).name + ':' + ((TextMessage) message).text));
     }
 
     private void queueRequest(HostedConnection conn, Message message) {
@@ -235,7 +232,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         Player player = players.get(conn.getId());
         if (player == null)
             return;
-        log.info("disconnecting: " + player.info.name + " id: " + conn.getId());
+        log.info("disconnecting: " + player.name + " id: " + conn.getId());
         bulletAppState.getPhysicsSpace().remove(player.physics);
         entities.remove(conn.getId());
         players.remove(conn.getId());
@@ -246,16 +243,15 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
     private void addPlayer(HostedConnection conn, Message message) {
         log.info("LoginRequestMessage received: " + message);
         LoginRequestMessage msg = (LoginRequestMessage) message;
-        if (players.values().stream().anyMatch(p -> p.info.name.equals(msg.login))) {
+        if (players.values().stream().anyMatch(p -> p.name.equals(msg.login))) {
             conn.close("Player with login " + msg.login + " is already in game");
             return;
         }
         Player player = new Player(conn, msg.login);
         players.put(conn.getId(), player);
-        server.broadcast(in(conn), new JoinedGameMessage(player.info.id, map));
+        server.broadcast(in(conn), new JoinedGameMessage(conn.getId(), map));
         if (map.isEmpty())
             return;
-
         Map<Integer, EntityInfo> newEntities = new HashMap<>();
         Collection<EntityState> changes = new HashSet<>();
         entities.forEach((i, e) -> {
@@ -263,25 +259,12 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             changes.add(e.state);
         });
         player.notConfirmedMessages.add(new GameStateChange(newEntities, changes));
-        ServerEntity playerEntity = entityFactory.createPlayerEntity(player);
-        player.physics = createPlayerPhysics(playerEntity);
-        bulletAppState.getPhysicsSpace().add(player.physics);
-        entities.put(conn.getId(), playerEntity);
-        addedEntities.add(player.info);
+        player.entity = entityFactory.createPlayerEntity(player);
+        bulletAppState.getPhysicsSpace().add(player.createPlayerPhysics());
+        entities.put(conn.getId(), player.entity);
+        addedEntities.add(player.entity.info);
     }
 
-    private CharacterControl createPlayerPhysics(ServerEntity entity) {
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(g_player_radius, g_player_height, g_player_axis);
-        CharacterControl control = new CharacterControl(capsuleShape, g_player_step);
-        control.setJumpSpeed(g_player_jumpheight);
-        control.setFallSpeed(g_player_fallspeed);
-        control.setGravity(g_player_gravity);
-        control.setPhysicsLocation(g_spawn_point);
-        Node node = new Node("player");
-        node.setUserData("entity", entity);
-        control.setSpatial(node);
-        return control;
-    }
 
     private void processRequest(Message message) {
         ActionMessage request = (ActionMessage) message;
@@ -303,7 +286,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
                 player.physics.jump();
             if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)) {
                 if (player.axeCooldown > 0 && player.axeQuantity > 0) {
-                    createProjectile(player.state.rot, player.state.pos, request.dir);
+                    createProjectile(player.entity.state.rot, player.entity.state.pos, request.dir);
                     player.axeCooldown = -1f;
                     player.axeQuantity--;
                 }
@@ -311,7 +294,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
             Vector3f left = request.dir.cross(up).multLocal(isStrafing);
             Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
-            player.state.rot = request.rot;
+            player.entity.state.rot = request.rot;
             player.physics.setWalkDirection(walkDirection.normalize());
         }
     }

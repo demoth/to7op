@@ -3,7 +3,7 @@ package org.demoth.nogaem.server;
 import com.jme3.bullet.control.RigidBodyControl;
 
 /**
- * Created by demoth on 17.07.14.
+ * @author demoth
  */
 public interface ServerMain {
     void removeEntity(int id, RigidBodyControl control);
