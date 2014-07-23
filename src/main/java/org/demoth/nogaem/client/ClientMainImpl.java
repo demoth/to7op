@@ -52,7 +52,9 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     private AudioNode              hitSound;
 
     public static void run() {
-        new ClientMainImpl().start(JmeContext.Type.Display);
+        ClientMainImpl clientMain = new ClientMainImpl();
+        clientMain.setShowSettings(true);
+        clientMain.start();
     }
 
     @Override
@@ -179,7 +181,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         }
         lastReceivedMessage = message.index;
         net.send(new Acknowledgement(message.index));
-        screenController.setAxesQuantity(message.axeQuantity);
+        screenController.setStats(message.stats);
         if (message.hitSound)
             hitSound.playInstance();
         if (message.removedIds != null)

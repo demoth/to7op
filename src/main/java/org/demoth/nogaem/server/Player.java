@@ -5,7 +5,6 @@ import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.*;
 import com.jme3.network.HostedConnection;
 import com.jme3.scene.Node;
-import org.demoth.nogaem.common.entities.*;
 import org.demoth.nogaem.common.messages.fromServer.GameStateChange;
 
 import java.util.*;
@@ -23,12 +22,12 @@ public class Player {
     public CharacterControl physics;
     public long    lastReceivedMessageIndex = 0;
     public boolean isReady                  = false;
-    public String name;
+    public String       name;
     public ServerEntity entity;
     // debug
-    public float axeCooldown = 0f;
-    public int   axeQuantity = 3;
-    public float hp          = 1;
+    public float       axeCooldown  = 0f;
+    public float       respawnTimer = 1;
+    public PlayerStats stats        = new PlayerStats();
 
     public Player(HostedConnection conn, String name) {
         this.conn = conn;
@@ -46,5 +45,36 @@ public class Player {
         node.setUserData("entity", entity);
         physics.setSpatial(node);
         return physics;
+    }
+
+    public boolean isAlive() {
+        return stats.hp > 0;
+    }
+
+    public boolean isReadyToRespawn() {
+        return respawnTimer >= 0;
+    }
+
+    public void respawn() {
+        respawnTimer = 0; // 5 seconds
+        stats.reset();
+        physics.setEnabled(true);
+        physics.setPhysicsLocation(g_spawn_point);
+        axeCooldown = -3f;
+    }
+
+    public void die() {
+        entity.state.pos = new Vector3f(entity.state.pos).addLocal(0, -3, 0);
+        entity.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
+        physics.setEnabled(false);
+        respawnTimer = -5f;
+    }
+
+    public void damage(int damage) {
+        if (isAlive()) {
+            stats.hp -= damage;
+            if (stats.hp <= 0)
+                die();
+        }
     }
 }

@@ -4,7 +4,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.material.Material;
 import com.jme3.math.*;
-import com.jme3.network.serializing.Serializer;
+import com.jme3.network.serializing.*;
 import com.jme3.scene.*;
 import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.plugins.blender.BlenderModelLoader;
@@ -12,6 +12,7 @@ import org.demoth.nogaem.common.entities.*;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
 import org.demoth.nogaem.common.messages.fromServer.*;
+import org.demoth.nogaem.server.PlayerStats;
 import org.slf4j.*;
 
 import java.io.*;
@@ -60,6 +61,7 @@ public class Util {
         Serializer.registerClass(RemovedEnitites.class);
         Serializer.registerClass(JoinedGameMessage.class);
 
+        Serializer.registerClass(PlayerStats.class);
         Serializer.registerClass(TextMessage.class);
     }
 

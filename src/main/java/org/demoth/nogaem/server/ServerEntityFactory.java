@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.demoth.nogaem.common.Config.gamedir;
 
 /**
- * Created by demoth on 16.07.14.
+ * @author demoth
  */
 public class ServerEntityFactory {
 
@@ -50,9 +50,11 @@ public class ServerEntityFactory {
             axe.state.rot = new Quaternion(control.getPhysicsRotation());
         };
         axe.touch = e -> {
+            axe.removed = true;
+            System.out.println("touched:");
             if (e.info.typeId == 1) {
-                server.getPlayer(e.info.id).hp = -5;
                 server.removeEntity(axeInfo.id, control);
+                server.getPlayer(e.info.id).damage(4);
                 server.sendHitSound();
             }
         };
@@ -61,17 +63,16 @@ public class ServerEntityFactory {
 
     public ServerEntity createPlayerEntity(Player player) {
         return new ServerEntity(new EntityInfo(player.conn.getId(), 1, player.name, 0), new EntityState(player.conn.getId()), tpf -> {
-            player.entity.state.pos = player.physics.getPhysicsLocation();
-            if (player.hp > 0) {
+            if (player.isAlive()) {
+                player.entity.state.pos = player.physics.getPhysicsLocation();
                 player.axeCooldown += tpf;
-                if (player.axeQuantity < 3 && player.axeCooldown > 10f) {
-                    player.axeQuantity++;
+                if (player.stats.axeCount < player.stats.axeCountMax && player.axeCooldown > 10f) {
+                    player.stats.axeCount++;
                     player.axeCooldown = 0f;
                 }
             } else {
-                player.entity.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
+                player.respawnTimer += tpf;
             }
-            player.hp += tpf;
         });
     }
 }

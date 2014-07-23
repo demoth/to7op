@@ -7,6 +7,7 @@ import de.lessvoid.nifty.elements.render.TextRenderer;
 import de.lessvoid.nifty.screen.*;
 import org.demoth.nogaem.client.ClientMain;
 import org.demoth.nogaem.common.Config;
+import org.demoth.nogaem.server.PlayerStats;
 
 /**
  * @author demoth
@@ -106,7 +107,12 @@ public class ClientScreenController implements ScreenController {
         disconnectButton.setEnabled(client.isConnected());
     }
 
-    public void setAxesQuantity(int axeQuantity) {
-        nifty.getScreen("hud").findElementByName("ammoText").getRenderer(TextRenderer.class).setText("AMMO:" + axeQuantity);
+    public void setStats(PlayerStats stats) {
+        nifty.getScreen("hud").findElementByName("axeText").getRenderer(TextRenderer.class)
+                .setText("Axes:" + stats.axeCount + '/' + stats.axeCountMax);
+        nifty.getScreen("hud").findElementByName("hpText").getRenderer(TextRenderer.class)
+                .setText("Health:" + stats.hp + '/' + stats.hpMax);
+        nifty.getScreen("hud").findElementByName("mpText").getRenderer(TextRenderer.class)
+                .setText("Mana:" + stats.mp + '/' + stats.mpMax);
     }
 }

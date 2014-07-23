@@ -110,7 +110,8 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         if (nodeA != null && nodeB != null) {
             ServerEntity entityA = nodeA.getUserData("entity");
             ServerEntity entityB = nodeB.getUserData("entity");
-            if (entityA != null && entityB != null) {
+            if (entityA != null && !entityA.removed
+                    && entityB != null && !entityB.removed) {
                 if (entityA.touch != null)
                     entityA.touch.accept(entityB);
                 else if (entityB.touch != null)
@@ -170,7 +171,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
 
     private GameStateChange calculateChanges(Player pl) {
         //log.info("player " + pl.id + " has " + pl.notConfirmedMessages.size() + " non confirmes msgs.");
-        GameStateChange msg = new GameStateChange(pl.axeQuantity);
+        GameStateChange msg = new GameStateChange(pl.stats);
         msg.hitSound = hit;
         msg.index = frameIndex;
         msg.added = new HashMap<>();
@@ -258,11 +259,12 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             newEntities.put(i, e.info);
             changes.add(e.state);
         });
-        player.notConfirmedMessages.add(new GameStateChange(newEntities, changes));
+        player.notConfirmedMessages.add(new GameStateChange(newEntities, changes, player.stats));
         player.entity = entityFactory.createPlayerEntity(player);
         bulletAppState.getPhysicsSpace().add(player.createPlayerPhysics());
         entities.put(conn.getId(), player.entity);
         addedEntities.add(player.entity.info);
+        player.respawn();
     }
 
 
@@ -271,7 +273,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         Player player = players.get(request.playerId);
         if (player == null || !player.isReady)
             return;
-        if (player.hp > 0f) {
+        if (player.isAlive()) {
             float isWalking = 0f;
             float isStrafing = 0f;
             if (pressed(request.buttons, Constants.Masks.WALK_FORWARD))
@@ -285,10 +287,10 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             if (pressed(request.buttons, Constants.Masks.JUMP))
                 player.physics.jump();
             if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)) {
-                if (player.axeCooldown > 0 && player.axeQuantity > 0) {
+                if (player.axeCooldown > 0 && player.stats.axeCount > 0) {
                     createProjectile(player.entity.state.rot, player.entity.state.pos, request.dir);
                     player.axeCooldown = -1f;
-                    player.axeQuantity--;
+                    player.stats.axeCount--;
                 }
             }
             request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
@@ -296,6 +298,9 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
             player.entity.state.rot = request.rot;
             player.physics.setWalkDirection(walkDirection.normalize());
+        } else if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)
+                && player.isReadyToRespawn()) {
+            player.respawn();
         }
     }
 
@@ -309,10 +314,10 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
 
     @Override
     public void removeEntity(int id, RigidBodyControl control) {
+        bulletAppState.getPhysicsSpace().remove(control);
         entities.remove(id);
         players.remove(id);
         removedIds.add(id);
-        bulletAppState.getPhysicsSpace().remove(control);
     }
 
     @Override

@@ -80,10 +80,14 @@
         </layer>
     </screen>
     <screen id="hud" controller="org.demoth.nogaem.client.gui.ClientScreenController">
-        <layer childLayout="center" width="50%" height="100%" align="center" valign="center">
+        <layer childLayout="vertical">
                 <!--<text font="Interface/Fonts/Default.fnt" width="50%" text="+"/>-->
-                <text font="Interface/Fonts/Default.fnt" text="+" valign="center"/>
-                <text id="ammoText" font="Interface/Fonts/Default.fnt" text="" valign="bottom"/>
+                <!--<text font="Interface/Fonts/Default.fnt" text="+"/>-->
+            <panel childLayout="vertical" width="50%" height="30%" align="right" valign="bottom">
+                <text id="axeText" font="Interface/Fonts/Default.fnt" text="" align="center"/>
+                <text id="hpText" font="Interface/Fonts/Default.fnt" text="" align="center"/>
+                <text id="mpText" font="Interface/Fonts/Default.fnt" text="" align="center"/>
+            </panel>
         </layer>
     </screen>
 </nifty>

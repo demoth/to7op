@@ -3,6 +3,7 @@ package org.demoth.nogaem.common.messages.fromServer;
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
 import org.demoth.nogaem.common.entities.*;
+import org.demoth.nogaem.server.PlayerStats;
 
 import java.util.*;
 
@@ -18,16 +19,17 @@ public class GameStateChange extends AbstractMessage {
     public boolean                  hitSound;
 
     // debug
-    public int axeQuantity;
+    public PlayerStats stats;
 
     public GameStateChange() {
     }
 
-    public GameStateChange(int axeQuantity) {
-        this.axeQuantity = axeQuantity;
+    public GameStateChange(PlayerStats stats) {
+        this.stats = stats;
     }
 
-    public GameStateChange(Map<Integer, EntityInfo> entities, Collection<EntityState> changes) {
+    public GameStateChange(Map<Integer, EntityInfo> entities, Collection<EntityState> changes, PlayerStats stats) {
+        this(stats);
         this.added = entities;
         this.changes = changes;
     }

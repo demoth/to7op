@@ -20,6 +20,7 @@ public class ServerEntity implements Savable {
     public Consumer<ServerEntity> touch;
 
     public float time;
+    public boolean removed;
 
     public ServerEntity(EntityInfo info, EntityState state, Consumer<Float> update) {
         this.info = info;
