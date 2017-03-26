@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * @author demoth
  */
+@Ignore
 @RunWith(JUnit4.class)
 public class TestServer {
 

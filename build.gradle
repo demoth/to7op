@@ -1,19 +1,34 @@
 apply plugin: 'java'
-apply plugin:'application'
+apply plugin: 'application'
 
 mainClassName = "org.demoth.nogaem.App"
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
-    compile fileTree(dir: 'lib', include: '*.jar')
     compile 'commons-cli:commons-cli:1.2'
     compile 'org.slf4j:slf4j-api:1.7.7'
     compile 'org.slf4j:jul-to-slf4j:1.7.7'
     compile 'ch.qos.logback:logback-classic:1.1.2'
     compile 'ch.qos.logback:logback-core:1.1.2'
+
+    compile group: 'org.jmonkeyengine', name: 'jme3-lwjgl', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-desktop', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-jogg', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-plugins', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-blender', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-networking', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-terrain', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-bullet', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-bullet-native', version: '3.1.0-beta2'
+    compile group: 'org.jmonkeyengine', name: 'jme3-niftygui', version: '3.1.0-beta2'
+
+    compile group: 'com.github.nifty-gui', name: 'nifty', version: '1.4.2'
+    compile group: 'com.github.nifty-gui', name: 'nifty-style-black', version: '1.4.2'
+    compile group: 'com.github.nifty-gui', name: 'nifty-default-controls', version: '1.4.2'
+
     testCompile 'junit:junit:4.11'
 }
 
@@ -21,10 +36,10 @@ applicationDistribution.from('data') {
     into 'data'
 }
 
-task copyBin(dependsOn: 'installApp', type: Copy) {
-    from 'build/install'
-    into 'binrepo'
-}
+//task copyBin(dependsOn: 'installApp', type: Copy) {
+//    from 'build/install'
+//    into 'binrepo'
+//}
 
 //task releaseBin(dependsOn: 'copyBin') {
 //    def ver = new File('binrepo/version')
@@ -40,5 +55,5 @@ task copyBin(dependsOn: 'installApp', type: Copy) {
 //    ver << 'git describe'.execute().in.text
 //
 //}
-
-distZip.mustRunAfter 'writeVersion'
+//
+//distZip.mustRunAfter 'writeVersion'
