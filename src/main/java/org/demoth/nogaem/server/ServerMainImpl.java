@@ -4,22 +4,35 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
-import com.jme3.bullet.collision.shapes.*;
-import com.jme3.bullet.control.*;
+import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.math.*;
+import com.jme3.math.Quaternion;
+import com.jme3.math.Vector3f;
 import com.jme3.network.*;
-import com.jme3.scene.*;
+import com.jme3.scene.Spatial;
 import com.jme3.system.JmeContext;
-import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.*;
+import org.demoth.nogaem.common.Constants;
+import org.demoth.nogaem.common.Util;
+import org.demoth.nogaem.common.entities.EntityInfo;
+import org.demoth.nogaem.common.entities.EntityState;
 import org.demoth.nogaem.common.messages.TextMessage;
-import org.demoth.nogaem.common.messages.fromClient.*;
-import org.demoth.nogaem.common.messages.fromServer.*;
-import org.slf4j.*;
+import org.demoth.nogaem.common.messages.fromClient.Acknowledgement;
+import org.demoth.nogaem.common.messages.fromClient.ActionMessage;
+import org.demoth.nogaem.common.messages.fromClient.LoginRequestMessage;
+import org.demoth.nogaem.common.messages.fromClient.RconMessage;
+import org.demoth.nogaem.common.messages.fromServer.ChangeMapMessage;
+import org.demoth.nogaem.common.messages.fromServer.GameStateChange;
+import org.demoth.nogaem.common.messages.fromServer.JoinedGameMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 import static com.jme3.network.Filters.in;
@@ -150,6 +163,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
                     }
             }
         });
+        sender.setName("Network update sender");
         sender.start();
     }
 
@@ -159,9 +173,9 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
     }
 
     private void sendResponses() {
-        changes = entities.values().stream().map(e -> e.state).collect(Collectors.toList());
+        changes = entities.values().stream().map(e -> e.state).filter(EntityState::isDirty).collect(Collectors.toList());
         frameIndex++;
-        log.trace("Sending respose to {0}. A={1}, R={2}, C={3}", players.size(), addedEntities.size(), removedIds.size(), changes.size());
+        log.trace(String.format("Total entities: %d, Changed entities: %d", entities.size(), changes.size()));
         players.values().stream().filter(p -> p.isReady).forEach(pl ->
                 server.broadcast(in(pl.conn), calculateChanges(pl)));
         addedEntities.clear();
@@ -189,7 +203,8 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         });
         pl.notConfirmedMessages.add(msg);
         msg.changes = changes;
-        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
+//        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
+//        log.trace("Changes for {0} A={1} R={2} C={3}", pl.entity.info.name, msg.added.size(), msg.removedIds.size(), msg.changes.size());
         return msg;
     }
 
@@ -211,7 +226,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             log.info("Player " + conn.getId() + " is ready");
             return;
         }
-        log.trace("Acknowledging for {0} index: {1}", conn.getId(), ack.index);
+//        log.trace("Acknowledging for {0} index: {1}", conn.getId(), ack.index);
         player.notConfirmedMessages.removeAll(player.notConfirmedMessages.stream().filter(m ->
                 m.index <= ack.index).collect(Collectors.toList()));
         player.lastReceivedMessageIndex = ack.index;
@@ -288,7 +303,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
                 player.physics.jump();
             if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)) {
                 if (player.axeCooldown > 0 && player.stats.axeCount > 0) {
-                    createProjectile(player.entity.state.rot, player.entity.state.pos, request.dir);
+                    createProjectile(player.entity.state.getRot(), player.entity.state.getPos(), request.dir);
                     player.axeCooldown = -1f;
                     player.stats.axeCount--;
                 }
@@ -296,7 +311,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
             request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
             Vector3f left = request.dir.cross(up).multLocal(isStrafing);
             Vector3f walkDirection = request.dir.multLocal(isWalking).add(left);
-            player.entity.state.rot = request.rot;
+            player.entity.state.setRot(request.rot);
             player.physics.setWalkDirection(walkDirection.normalize());
         } else if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)
                 && player.isReadyToRespawn()) {
@@ -358,7 +373,10 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
     class UpdatingGameState extends AbstractAppState {
         @Override
         public void update(float tpf) {
-            entities.values().forEach(e -> e.update.accept(tpf));
+            entities.values().forEach(e -> {
+                e.state.clean();
+                e.update.accept(tpf);
+            });
         }
     }
 }

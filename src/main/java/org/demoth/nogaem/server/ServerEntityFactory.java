@@ -46,8 +46,8 @@ public class ServerEntityFactory {
             if (axe.time > ttl)
                 server.removeEntity(axeInfo.id, control);
             axe.time += tpf;
-            axe.state.pos = new Vector3f(control.getPhysicsLocation());
-            axe.state.rot = new Quaternion(control.getPhysicsRotation());
+            axe.state.setPos(new Vector3f(control.getPhysicsLocation()));
+            axe.state.setRot(new Quaternion(control.getPhysicsRotation()));
         };
         axe.touch = e -> {
             axe.removed = true;
@@ -64,7 +64,7 @@ public class ServerEntityFactory {
     public ServerEntity createPlayerEntity(Player player) {
         return new ServerEntity(new EntityInfo(player.conn.getId(), 1, player.name, 0), new EntityState(player.conn.getId()), tpf -> {
             if (player.isAlive()) {
-                player.entity.state.pos = player.physics.getPhysicsLocation();
+                player.entity.state.setPos(player.physics.getPhysicsLocation());
                 player.axeCooldown += tpf;
                 if (player.stats.axeCount < player.stats.axeCountMax && player.axeCooldown > 10f) {
                     player.stats.axeCount++;

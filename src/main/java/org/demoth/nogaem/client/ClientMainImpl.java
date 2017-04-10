@@ -195,20 +195,20 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
                 log.trace("Moving: {0}", change);
                 if (change.id == myId) {
                     startPosition = new Vector3f(cam.getLocation());
-                    endPosition = change.pos.add(0f, g_player_height / 2, 0f);
+                    endPosition = change.getPos().add(0f, g_player_height / 2, 0f);
                     camLerp = 0f;
                 } else {
                     ClientEntity control = entities.get(change.id);
                     if (control != null) {
                         if (!control.initialized) {
-                            control.getSpatial().setLocalTranslation(change.pos);
-                            control.getSpatial().setLocalRotation(change.rot);
+                            control.getSpatial().setLocalTranslation(change.getPos());
+                            control.getSpatial().setLocalRotation(change.getRot());
                             control.initialized = true;
                         } else {
-                            if (change.rot != null && !change.rot.equals(control.endRotation))
-                                control.rotateLerp(change.rot);
-                            if (change.pos != null && !change.pos.equals(control.endPosition))
-                                control.moveLerp(change.pos);
+                            if (change.getRot() != null && !change.getRot().equals(control.endRotation))
+                                control.rotateLerp(change.getRot());
+                            if (change.getPos() != null && !change.getPos().equals(control.endPosition))
+                                control.moveLerp(change.getPos());
                         }
                     } else {
                         log.warn("No control found for " + change.id);
@@ -221,7 +221,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     // update
     private void logIn(JoinedGameMessage message) {
         myId = message.id;
-        log.info("logged in successfuly: id=" + message.id);
+        log.info("logged in successfully: id=" + message.id);
         if (!message.map.isEmpty())
             loadMap(message.map);
     }

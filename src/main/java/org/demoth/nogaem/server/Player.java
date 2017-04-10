@@ -64,8 +64,8 @@ public class Player {
     }
 
     public void die() {
-        entity.state.pos = new Vector3f(entity.state.pos).addLocal(0, -3, 0);
-        entity.state.rot = new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0));
+        entity.state.setPos(new Vector3f(entity.state.getPos()).addLocal(0, -3, 0));
+        entity.state.setRot(new Quaternion().fromAngleAxis(FastMath.HALF_PI, new Vector3f(1, 0, 0)));
         physics.setEnabled(false);
         respawnTimer = -5f;
     }
