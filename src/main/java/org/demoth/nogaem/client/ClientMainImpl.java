@@ -402,7 +402,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         audio.setPositional(false);
         rootNode.attachChild(audio);
         audio.play();
-        AudioNode ambient = new AudioNode(assetManager, "sounds/xdimebagx-ambient.ogg", AudioData.DataType.Buffer);
+        AudioNode ambient = new AudioNode(assetManager, "sounds/xdimebagx-ambient.ogg", AudioData.DataType.Stream);
         ambient.setPositional(false);
         ambient.setLooping(true);
         rootNode.attachChild(ambient);
