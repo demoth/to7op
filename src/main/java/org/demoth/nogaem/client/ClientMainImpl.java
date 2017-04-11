@@ -2,6 +2,7 @@ package org.demoth.nogaem.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
+import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.*;
@@ -89,7 +90,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         screenController.showMainMenu();
         log.info("GUI initialized");
         entityFactory = new ClientEntityFactory(assetManager, rootNode);
-        hitSound = new AudioNode(assetManager, "sounds/ekokubza123-punch.ogg");
+        hitSound = new AudioNode(assetManager, "sounds/ekokubza123-punch.ogg", AudioData.DataType.Buffer);
         hitSound.setLooping(false);
         hitSound.setPositional(false);
 
@@ -396,12 +397,12 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         Util.attachCoordinateAxes(rootNode, assetManager);
         stateManager.attach(ingameState);
         screenController.resume();
-        AudioNode audio = new AudioNode(assetManager, "sounds/fins-teleport.wav");
+        AudioNode audio = new AudioNode(assetManager, "sounds/fins-teleport.wav", AudioData.DataType.Buffer);
         audio.setLooping(false);
         audio.setPositional(false);
         rootNode.attachChild(audio);
         audio.play();
-        AudioNode ambient = new AudioNode(assetManager, "sounds/xdimebagx-ambient.ogg");
+        AudioNode ambient = new AudioNode(assetManager, "sounds/xdimebagx-ambient.ogg", AudioData.DataType.Buffer);
         ambient.setPositional(false);
         ambient.setLooping(true);
         rootNode.attachChild(ambient);

@@ -1,6 +1,7 @@
 package org.demoth.nogaem.client;
 
 import com.jme3.asset.AssetManager;
+import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.font.BitmapText;
 import com.jme3.scene.*;
@@ -65,7 +66,7 @@ public class ClientEntityFactory {
 
         if (playSounds) {
             // audio
-            AudioNode audio = new AudioNode(assetManager, "sounds/" + detailedInfo.appearSound);
+            AudioNode audio = new AudioNode(assetManager, "sounds/" + detailedInfo.appearSound, AudioData.DataType.Buffer);
             audio.setPositional(true);
             audio.setLooping(false);
             node.attachChild(audio);
