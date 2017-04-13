@@ -201,7 +201,7 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
             return;
         if (entity.info.typeId == 3) {
             // playSound
-            explosion.play();
+            explosion.playInstance();
             // play effect
             explosionEffect.setLocalTranslation(entity.endPosition);
             explosionTime = 5;
