@@ -4,26 +4,42 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
+import com.jme3.effect.shapes.EmitterSphereShape;
 import com.jme3.input.KeyInput;
-import com.jme3.input.controls.*;
-import com.jme3.light.*;
-import com.jme3.math.*;
-import com.jme3.network.*;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
+import com.jme3.math.Vector3f;
+import com.jme3.network.Client;
+import com.jme3.network.ClientStateListener;
+import com.jme3.network.Message;
+import com.jme3.network.Network;
+import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.system.JmeContext;
 import org.demoth.nogaem.client.controls.ClientEntity;
-import org.demoth.nogaem.client.gui.*;
+import org.demoth.nogaem.client.gui.ClientScreenController;
+import org.demoth.nogaem.client.gui.Screens;
 import org.demoth.nogaem.client.states.IngameState;
 import org.demoth.nogaem.client.swing.SwingConsole;
 import org.demoth.nogaem.common.*;
-import org.demoth.nogaem.common.entities.*;
+import org.demoth.nogaem.common.entities.EntityInfo;
 import org.demoth.nogaem.common.messages.TextMessage;
 import org.demoth.nogaem.common.messages.fromClient.*;
-import org.demoth.nogaem.common.messages.fromServer.*;
-import org.slf4j.*;
+import org.demoth.nogaem.common.messages.fromServer.ChangeMapMessage;
+import org.demoth.nogaem.common.messages.fromServer.GameStateChange;
+import org.demoth.nogaem.common.messages.fromServer.JoinedGameMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.demoth.nogaem.common.Config.*;
@@ -31,26 +47,30 @@ import static org.demoth.nogaem.common.Constants.Actions.*;
 import static org.demoth.nogaem.common.Util.trimFirstWord;
 
 public class ClientMainImpl extends SimpleApplication implements ClientMain {
-    private static final Logger                         log      = LoggerFactory.getLogger(ClientMainImpl.class);
-    final                ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final        Map<Integer, ClientEntity>     entities = new HashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(ClientMainImpl.class);
+    final ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
+    private final Map<Integer, ClientEntity> entities = new HashMap<>();
     Client net;
     volatile long buttons;
-    private  int  myId;
-    private long     sentButtons   = 0;
+    private int myId;
+    private long sentButtons = 0;
     private Vector3f sentDirection = new Vector3f();
     // interpolation
     private float camLerp;
     private Vector3f startPosition = new Vector3f();
-    private Vector3f endPosition   = new Vector3f();
+    private Vector3f endPosition = new Vector3f();
 
-    private SwingConsole           console;
-    private Thread                 sender;
-    private long                   lastReceivedMessage;
+    private SwingConsole console;
+    private Thread sender;
+    private long lastReceivedMessage;
     private ClientScreenController screenController;
-    private IngameState            ingameState;
-    private ClientEntityFactory    entityFactory;
-    private AudioNode              hitSound;
+    private IngameState ingameState;
+    private ClientEntityFactory entityFactory;
+    private AudioNode hitSound;
+    private AudioNode explosion;
+    private Node explosionEffect;
+    private ParticleEmitter flash;
+    private float explosionTime = 5;
 
     public static void run() {
         ClientMainImpl clientMain = new ClientMainImpl();
@@ -94,6 +114,10 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         hitSound.setLooping(false);
         hitSound.setPositional(false);
 
+        explosion = new AudioNode(assetManager, "sounds/hl-explode5.wav", AudioData.DataType.Buffer);
+        explosion.setLooping(false);
+        explosion.setPositional(false);
+
 //        if (!host.isEmpty())
 //            connect();
     }
@@ -101,6 +125,12 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
 
     @Override
     public void update() {
+        if (flash != null)
+            if (explosionTime < 0) {
+                flash.killAllParticles();
+            } else {
+                explosionTime -= 0.01f;
+            }
         super.update();
         if (!messages.isEmpty()) {
             Message message = messages.poll();
@@ -169,6 +199,14 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
         Spatial sp = entity.getSpatial();
         if (sp == null)
             return;
+        if (entity.info.typeId == 3) {
+            // playSound
+            explosion.play();
+            // play effect
+            explosionEffect.setLocalTranslation(entity.endPosition);
+            explosionTime = 5;
+            flash.emitAllParticles();
+        }
         rootNode.detachChild(sp);
         entities.remove(id);
         log.info("Removed info " + id);
@@ -380,6 +418,9 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
 
     private void loadMap(String mapName) {
         resetClient();
+        createFlash();
+        renderManager.preloadScene(explosionEffect);
+        rootNode.attachChild(explosionEffect);
         log.info("Changing map:" + mapName);
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         // We add light so we see the scene
@@ -438,4 +479,35 @@ public class ClientMainImpl extends SimpleApplication implements ClientMain {
     public boolean isConnected() {
         return net != null && net.isConnected();
     }
+
+    private void createFlash() {
+        explosionEffect = new Node("explosionFX");
+        int COUNT_FACTOR = 1;
+        float COUNT_FACTOR_F = 1f;
+
+        boolean POINT_SPRITE = true;
+        ParticleMesh.Type EMITTER_TYPE = POINT_SPRITE ? ParticleMesh.Type.Point : ParticleMesh.Type.Triangle;
+
+        flash = new ParticleEmitter("Flash", EMITTER_TYPE, 24 * COUNT_FACTOR);
+        flash.setSelectRandomImage(true);
+        flash.setStartColor(new ColorRGBA(1f, 0.8f, 0.36f, (float) (1f / COUNT_FACTOR_F)));
+        flash.setEndColor(new ColorRGBA(1f, 0.8f, 0.36f, 0f));
+        flash.setStartSize(.1f);
+        flash.setEndSize(3.0f);
+        flash.setShape(new EmitterSphereShape(Vector3f.ZERO, .05f));
+        flash.setParticlesPerSec(0);
+        flash.setGravity(0, 0, 0);
+        flash.setLowLife(.2f);
+        flash.setHighLife(.2f);
+        flash.setInitialVelocity(new Vector3f(0, 5f, 0));
+        flash.setVelocityVariation(1);
+        flash.setImagesX(5);
+        flash.setImagesY(3);
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        mat.setTexture("Texture", assetManager.loadTexture("textures/explosion-sprite.png"));
+        mat.setBoolean("PointSprite", POINT_SPRITE);
+        flash.setMaterial(mat);
+        explosionEffect.attachChild(flash);
+    }
+
 }

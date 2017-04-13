@@ -26,6 +26,7 @@ public class Player {
     public ServerEntity entity;
     // debug
     public float       axeCooldown  = 0f;
+    public float       fbCooldown  = 0f;
     public float       respawnTimer = 1;
     public PlayerStats stats        = new PlayerStats();
 
@@ -61,6 +62,7 @@ public class Player {
         physics.setEnabled(true);
         physics.setPhysicsLocation(g_spawn_point);
         axeCooldown = -3f;
+        fbCooldown = -3f;
     }
 
     public void die() {

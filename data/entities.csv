@@ -1,3 +1,4 @@
 typeId,modelName,size,appearSound,mass
 1,player.blend,5.2,fins-teleport.wav,10
 2,axe.blend,1,fins-energy.wav,2
+3,fireball.blend,1,fins-energy.wav,1

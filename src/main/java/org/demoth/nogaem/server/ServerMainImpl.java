@@ -39,22 +39,22 @@ import static com.jme3.network.Filters.in;
 import static org.demoth.nogaem.common.Config.*;
 
 public class ServerMainImpl extends SimpleApplication implements ServerMain {
-    static final Logger   log = LoggerFactory.getLogger(ServerMainImpl.class);
-    static final Vector3f up  = new Vector3f(0f, 1f, 0f);
+    static final Logger log = LoggerFactory.getLogger(ServerMainImpl.class);
+    static final Vector3f up = new Vector3f(0f, 1f, 0f);
 
-    final Map<Integer, ServerEntity> entities      = new ConcurrentHashMap<>();
-    final Map<Integer, Player>       players       = new ConcurrentHashMap<>();
-    final Collection<Message>        requests      = new ConcurrentLinkedQueue<>();
-    final Collection<EntityInfo>     addedEntities = new ConcurrentLinkedQueue<>();
-    final Collection<Integer>        removedIds    = new ConcurrentLinkedQueue<>();
+    final Map<Integer, ServerEntity> entities = new ConcurrentHashMap<>();
+    final Map<Integer, Player> players = new ConcurrentHashMap<>();
+    final Collection<Message> requests = new ConcurrentLinkedQueue<>();
+    final Collection<EntityInfo> addedEntities = new ConcurrentLinkedQueue<>();
+    final Collection<Integer> removedIds = new ConcurrentLinkedQueue<>();
     Collection<EntityState> changes = new ConcurrentLinkedQueue<>();
-    Server            server;
-    BulletAppState    bulletAppState;
+    Server server;
+    BulletAppState bulletAppState;
     UpdatingGameState updatingState;
-    Thread            sender;
-    long              frameIndex;
+    Thread sender;
+    long frameIndex;
     private int lastId = 10000;
-    boolean             hit;
+    boolean hit;
     ServerEntityFactory entityFactory;
 
     public static void run() {
@@ -109,6 +109,9 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         stateManager.attach(updatingState);
         Spatial sceneModel = assetManager.loadModel("maps/" + mapName);
         sceneModel.setLocalScale(g_scale);
+        // TODO remove this horrible Crutch
+        // this server entity is required for collide function
+        sceneModel.setUserData("entity", new ServerEntity(new EntityInfo(), null));
         CollisionShape sceneShape = CollisionShapeFactory.createMeshShape(sceneModel);
         RigidBodyControl landscapeControl = new RigidBodyControl(sceneShape, 0f);
         sceneModel.addControl(landscapeControl);
@@ -123,8 +126,7 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         if (nodeA != null && nodeB != null) {
             ServerEntity entityA = nodeA.getUserData("entity");
             ServerEntity entityB = nodeB.getUserData("entity");
-            if (entityA != null && !entityA.removed
-                    && entityB != null && !entityB.removed) {
+            if (entityA != null && !entityA.removed && entityB != null && !entityB.removed) {
                 if (entityA.touch != null)
                     entityA.touch.accept(entityB);
                 else if (entityB.touch != null)
@@ -303,9 +305,15 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
                 player.physics.jump();
             if (pressed(request.buttons, Constants.Masks.FIRE_PRIMARY)) {
                 if (player.axeCooldown > 0 && player.stats.axeCount > 0) {
-                    createProjectile(player.entity.state.getRot(), player.entity.state.getPos(), request.dir);
+                    createProjectile(2, player.entity.state.getRot(), player.entity.state.getPos(), request.dir);
                     player.axeCooldown = -1f;
                     player.stats.axeCount--;
+                }
+            }
+            if (pressed(request.buttons, Constants.Masks.FIRE_SECONDARY)) {
+                if (player.stats.mp > 0) {
+                    createProjectile(3, player.entity.state.getRot(), player.entity.state.getPos(), request.dir);
+                    player.stats.mp--;
                 }
             }
             request.dir = new Vector3f(request.dir.x, 0f, request.dir.z);
@@ -319,9 +327,9 @@ public class ServerMainImpl extends SimpleApplication implements ServerMain {
         }
     }
 
-    private void createProjectile(Quaternion rot, Vector3f pos, Vector3f dir) {
+    private void createProjectile(int typeId, Quaternion rot, Vector3f pos, Vector3f dir) {
         int id = ++lastId;
-        ServerEntity axe = entityFactory.create(id, 2, rot, pos, dir);
+        ServerEntity axe = entityFactory.create(id, typeId, rot, pos, dir);
         entities.put(id, axe);
         addedEntities.add(axe.info);
 

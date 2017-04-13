@@ -42,4 +42,12 @@ public class ServerEntity implements Savable {
     public void read(JmeImporter jmeImporter) throws IOException {
 
     }
+
+    @Override
+    public String toString() {
+        return "ServerEntity{" +
+                "info=" + info +
+                ", state=" + state +
+                '}';
+    }
 }

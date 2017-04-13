@@ -16,7 +16,7 @@ public class Config {
     //////////////////////////////////////////////////////////////////////////
     /////////////////       CONFIG VARIABLES START      //////////////////////
     //////////////////////////////////////////////////////////////////////////
-    public static        int      debug               = 0;
+    public static        int      debug               = 1;
     public static        int      port                = 5555;
     public static        long     sv_sleep            = 100;
     public static        int      sv_drop_after       = 50;
